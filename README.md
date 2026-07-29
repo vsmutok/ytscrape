@@ -81,6 +81,10 @@ with YouTube() as yt:
     print(details.title, details.channel, details.views)
 ```
 
+More runnable, self-contained scripts live in the [`examples/`](examples/)
+folder — searching videos/channels/playlists, fetching video details,
+pagination, localisation and error handling.
+
 ### Search filters
 
 | Filter                     | Description         |
