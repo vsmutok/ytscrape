@@ -181,6 +181,3 @@ ytscrape search "python" --filter channels --max 5
 ## License
 
 [MIT](LICENSE)
-
-    "build>=1.5.0",
-    "twine>=7.0.0",
