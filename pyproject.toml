@@ -1,0 +1,70 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ytscrape"
+version = "0.1.0"
+description = "YouTube scraper for Python — search videos, channels and playlists and fetch video metadata via the InnerTube API, no API key required."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+keywords = [
+    "youtube",
+    "youtube-scraper",
+    "scraper",
+    "crawler",
+    "innertube",
+    "youtube-api",
+    "youtube-data",
+    "video",
+    "scraping",
+    "search",
+    "free",
+    "no-api-key",
+]
+authors = [{ name = "Vasyl Smutok" }]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Typing :: Typed",
+]
+dependencies = [
+    "requests>=2.28",
+    "pycountry>=22.3.5",
+]
+
+[project.urls]
+Homepage = "https://github.com/vsmutok/ytscrape"
+Repository = "https://github.com/vsmutok/ytscrape"
+Issues = "https://github.com/vsmutok/ytscrape/issues"
+
+[project.scripts]
+ytscrape = "ytscrape.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/ytscrape"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/ytscrape",
+    "README.md",
+    "LICENSE",
+]
+
+[dependency-groups]
+dev = [
+    "build>=1.5.0",
+    "twine>=7.0.0",
+]
