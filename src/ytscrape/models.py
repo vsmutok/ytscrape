@@ -58,9 +58,7 @@ def _lockup_metadata_rows(lockup: dict[str, Any]) -> list[dict[str, Any]]:
     """Return the ``metadataRows`` list of a ``lockupViewModel`` (or empty)."""
     meta = lockup.get("metadata", {}).get("lockupMetadataViewModel", {})
     rows = (
-        meta.get("metadata", {})
-        .get("contentMetadataViewModel", {})
-        .get("metadataRows")
+        meta.get("metadata", {}).get("contentMetadataViewModel", {}).get("metadataRows")
     )
     return rows if isinstance(rows, list) else []
 
@@ -136,17 +134,13 @@ class Video:
         return f"https://www.youtube.com/watch?v={self.video_id}"
 
     @classmethod
-    def from_renderer(cls, renderer: dict[str, Any]) -> "Video":
+    def from_renderer(cls, renderer: dict[str, Any]) -> Video:
         """Build a :class:`Video` from a ``videoRenderer`` dictionary."""
         owner = renderer.get("ownerText") or renderer.get("longBylineText")
         channel_id = None
         runs = (owner or {}).get("runs") if isinstance(owner, dict) else None
         if runs:
-            nav = (
-                runs[0]
-                .get("navigationEndpoint", {})
-                .get("browseEndpoint", {})
-            )
+            nav = runs[0].get("navigationEndpoint", {}).get("browseEndpoint", {})
             channel_id = nav.get("browseId")
         return cls(
             video_id=renderer.get("videoId", ""),
@@ -160,7 +154,7 @@ class Video:
         )
 
     @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> "Video":
+    def from_lockup(cls, lockup: dict[str, Any]) -> Video:
         """Build a :class:`Video` from a ``lockupViewModel`` dictionary.
 
         Used for the modern search response format where the ``contentType``
@@ -193,7 +187,7 @@ class Channel:
         return f"https://www.youtube.com/channel/{self.channel_id}"
 
     @classmethod
-    def from_renderer(cls, renderer: dict[str, Any]) -> "Channel":
+    def from_renderer(cls, renderer: dict[str, Any]) -> Channel:
         """Build a :class:`Channel` from a ``channelRenderer`` dictionary."""
         return cls(
             channel_id=renderer.get("channelId", ""),
@@ -207,7 +201,7 @@ class Channel:
         )
 
     @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> "Channel":
+    def from_lockup(cls, lockup: dict[str, Any]) -> Channel:
         """Build a :class:`Channel` from a ``lockupViewModel`` dictionary.
 
         Used for the modern search response format where the ``contentType``
@@ -243,7 +237,7 @@ class Playlist:
         return f"https://www.youtube.com/playlist?list={self.playlist_id}"
 
     @classmethod
-    def from_renderer(cls, renderer: dict[str, Any]) -> "Playlist":
+    def from_renderer(cls, renderer: dict[str, Any]) -> Playlist:
         """Build a :class:`Playlist` from a ``playlistRenderer`` dictionary."""
         return cls(
             playlist_id=renderer.get("playlistId", ""),
@@ -254,7 +248,7 @@ class Playlist:
         )
 
     @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> "Playlist":
+    def from_lockup(cls, lockup: dict[str, Any]) -> Playlist:
         """Build a :class:`Playlist` from a ``lockupViewModel`` dictionary.
 
         Used for the modern search response format where the ``contentType``
@@ -290,7 +284,7 @@ class VideoDetails:
         return f"https://www.youtube.com/watch?v={self.video_id}"
 
     @classmethod
-    def from_player_response(cls, data: dict[str, Any]) -> "VideoDetails":
+    def from_player_response(cls, data: dict[str, Any]) -> VideoDetails:
         """Build :class:`VideoDetails` from a ``player`` endpoint response."""
         details = data.get("videoDetails", {})
 

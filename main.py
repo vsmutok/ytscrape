@@ -15,9 +15,7 @@ def main() -> None:
             print(f"- {video.title} ({video.url})")
 
         print("\n=== Channels for 'python' ===")
-        for channel in yt.search(
-            "python", filter=SearchFilter.CHANNELS, max_results=5
-        ):
+        for channel in yt.search("python", filter=SearchFilter.CHANNELS, max_results=5):
             print(f"- {channel.title} ({channel.url})")
 
 

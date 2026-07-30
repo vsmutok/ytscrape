@@ -9,9 +9,7 @@ from ytscrape import SearchFilter, YouTube
 def main() -> None:
     with YouTube() as yt:
         print("Channels:")
-        for channel in yt.search(
-            "python", filter=SearchFilter.CHANNELS, max_results=5
-        ):
+        for channel in yt.search("python", filter=SearchFilter.CHANNELS, max_results=5):
             print(f"  {channel.title} — {channel.subscribers}")
             print(f"    {channel.url}")
 

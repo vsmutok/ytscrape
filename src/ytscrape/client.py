@@ -96,9 +96,7 @@ class InnerTubeClient:
             )
             response.raise_for_status()
         except requests.RequestException as exc:
-            raise RequestError(
-                f"Failed to load YouTube home page: {exc}"
-            ) from exc
+            raise RequestError(f"Failed to load YouTube home page: {exc}") from exc
         return self._extractor.extract(response.text)
 
     def _client_context(self) -> dict[str, Any]:
@@ -128,9 +126,7 @@ class InnerTubeClient:
             response.raise_for_status()
             return response.json()
         except requests.RequestException as exc:
-            raise RequestError(
-                f"Request to {endpoint!r} failed: {exc}"
-            ) from exc
+            raise RequestError(f"Request to {endpoint!r} failed: {exc}") from exc
 
     def search(
         self,
@@ -162,7 +158,7 @@ class InnerTubeClient:
         """Close the underlying HTTP session."""
         self._session.close()
 
-    def __enter__(self) -> "InnerTubeClient":
+    def __enter__(self) -> InnerTubeClient:
         return self
 
     def __exit__(self, *exc_info: object) -> None:
