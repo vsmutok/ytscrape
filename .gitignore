@@ -17,6 +17,7 @@ env/
 
 # uv
 .uv/
+uv.lock
 
 # Caches / tooling
 .pytest_cache/
