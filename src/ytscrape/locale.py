@@ -35,9 +35,7 @@ def _validate_language(code: str) -> str:
     if not isinstance(code, str) or not code.strip():
         raise ValueError(f"Invalid language: {code!r}.")
     normalised = code.strip().lower()
-    if len(normalised) != 2 or pycountry.languages.get(
-        alpha_2=normalised
-    ) is None:
+    if len(normalised) != 2 or pycountry.languages.get(alpha_2=normalised) is None:
         raise ValueError(
             f"Unknown language code {code!r}. Expected a valid ISO 639-1 "
             "(two-letter) code such as 'en', 'uk' or 'de'."
@@ -46,7 +44,7 @@ def _validate_language(code: str) -> str:
 
 
 def _validate_country(code: str) -> str:
-    """Return the normalised ISO 3166-1 alpha-2 country ``code`` or raise ``ValueError``.
+    """Return the normalised ISO 3166-1 alpha-2 country ``code`` or raise ``ValueError``
 
     The code is normalised to upper case and validated against the ISO 3166-1
     alpha-2 (two-letter) country list via ``pycountry``.
@@ -54,9 +52,7 @@ def _validate_country(code: str) -> str:
     if not isinstance(code, str) or not code.strip():
         raise ValueError(f"Invalid country: {code!r}.")
     normalised = code.strip().upper()
-    if len(normalised) != 2 or pycountry.countries.get(
-        alpha_2=normalised
-    ) is None:
+    if len(normalised) != 2 or pycountry.countries.get(alpha_2=normalised) is None:
         raise ValueError(
             f"Unknown country code {code!r}. Expected a valid ISO 3166-1 "
             "alpha-2 (two-letter) code such as 'US', 'UA' or 'DE'."
@@ -88,7 +84,7 @@ class Language:
         return self.code
 
     @classmethod
-    def of(cls, value: "Language | str") -> "Language":
+    def of(cls, value: Language | str) -> Language:
         """Coerce ``value`` into a :class:`Language`.
 
         Accepts an existing :class:`Language` (returned as-is) or a raw ISO
@@ -123,7 +119,7 @@ class Country:
         return self.code
 
     @classmethod
-    def of(cls, value: "Country | str") -> "Country":
+    def of(cls, value: Country | str) -> Country:
         """Coerce ``value`` into a :class:`Country`.
 
         Accepts an existing :class:`Country` (returned as-is) or a raw ISO
@@ -157,9 +153,9 @@ class Locale:
     @classmethod
     def of(
         cls,
-        language: "Language | str | None" = None,
-        country: "Country | str | None" = None,
-    ) -> "Locale":
+        language: Language | str | None = None,
+        country: Country | str | None = None,
+    ) -> Locale:
         """Build a :class:`Locale`, falling back to defaults for missing parts."""
         kwargs: dict[str, Language | Country] = {}
         if language is not None:

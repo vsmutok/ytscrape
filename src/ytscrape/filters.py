@@ -34,7 +34,7 @@ class SearchFilter(str, Enum):
         return _FILTER_PARAMS[self]
 
     @classmethod
-    def from_value(cls, value: "SearchFilter | str") -> "SearchFilter":
+    def from_value(cls, value: SearchFilter | str) -> SearchFilter:
         """Coerce a string or :class:`SearchFilter` into a :class:`SearchFilter`."""
         if isinstance(value, cls):
             return value
