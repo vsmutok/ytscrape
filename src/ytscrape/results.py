@@ -8,7 +8,8 @@ results (or an optional ``max_results`` limit) are exhausted.
 
 from __future__ import annotations
 
-from typing import Any, Iterator
+from collections.abc import Iterator
+from typing import Any
 
 from . import parsing
 from .models import Channel, Playlist, Video
@@ -32,7 +33,7 @@ class SearchResults:
 
     def __init__(
         self,
-        client: "Any",
+        client: Any,
         first_page: dict[str, Any],
         *,
         max_results: int | None = None,

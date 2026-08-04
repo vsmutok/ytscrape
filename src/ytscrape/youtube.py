@@ -95,9 +95,7 @@ class YouTube:
         """
         search_filter = SearchFilter.from_value(filter)
         first_page = self._client.search(query, params=search_filter.params)
-        return SearchResults(
-            self._client, first_page, max_results=max_results
-        )
+        return SearchResults(self._client, first_page, max_results=max_results)
 
     def video(self, video: str) -> VideoDetails:
         """Fetch detailed metadata for a single video.
@@ -115,7 +113,7 @@ class YouTube:
         """Close the underlying HTTP session."""
         self._client.close()
 
-    def __enter__(self) -> "YouTube":
+    def __enter__(self) -> YouTube:
         return self
 
     def __exit__(self, *exc_info: object) -> None:
