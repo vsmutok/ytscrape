@@ -192,7 +192,7 @@ loads the next page:
 ```python
 results = yt.search("python")
 
-for item in results:      # loads pages on demand
+for item in results:  # loads pages on demand
     print(item.title)
 ```
 
@@ -201,7 +201,7 @@ You can also page manually:
 ```python
 results = yt.search("python")
 print(len(results.fetch_next_page()))  # explicitly load one more page
-print(results.has_more)                # is there another page?
+print(results.has_more)  # is there another page?
 ```
 
 Use `max_results` to cap how many items you consume.
