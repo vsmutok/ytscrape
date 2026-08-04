@@ -9,26 +9,33 @@ description = "YouTube scraper for Python — search videos, channels and playli
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.10"
+
+authors = [
+    { name = "Vasyl Smutok" },
+    { email = "vasyl.smutok@gmail.com" },
+]
+
 keywords = [
     "youtube",
-    "youtube-scraper",
-    "scraper",
-    "crawler",
-    "innertube",
     "youtube-api",
     "youtube-data",
-    "video",
+    "youtube-scraper",
+    "innertube",
+    "scraper",
+    "crawler",
     "scraping",
+    "video",
     "search",
     "free",
     "no-api-key",
 ]
-authors = [{ name = "Vasyl Smutok" }]
+
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
+
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
     "Programming Language :: Python :: 3.10",
@@ -36,18 +43,22 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
+
     "Topic :: Internet :: WWW/HTTP",
     "Topic :: Software Development :: Libraries :: Python Modules",
+
     "Typing :: Typed",
 ]
+
 dependencies = [
-    "requests>=2.28",
     "pycountry>=22.3.5",
+    "requests>=2.28",
 ]
 
 [project.urls]
 Homepage = "https://github.com/vsmutok/ytscrape"
 Repository = "https://github.com/vsmutok/ytscrape"
+Documentation = "https://github.com/vsmutok/ytscrape#readme"
 Issues = "https://github.com/vsmutok/ytscrape/issues"
 
 [project.scripts]
@@ -56,6 +67,10 @@ ytscrape = "ytscrape.__main__:main"
 [tool.hatch.build.targets.wheel]
 packages = ["src/ytscrape"]
 
+include = [
+    "src/ytscrape/py.typed",
+]
+
 [tool.hatch.build.targets.sdist]
 include = [
     "src/ytscrape",
@@ -63,8 +78,33 @@ include = [
     "LICENSE",
 ]
 
+[tool.ruff]
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "F",   # pyflakes
+    "I",   # isort
+    "B",   # flake8-bugbear
+    "UP",  # pyupgrade
+]
+
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
 [dependency-groups]
 dev = [
-    "build>=1.5.0",
-    "twine>=7.0.0",
+    "bandit[toml]>=1.9.4",
+    "pre-commit>=4.3.0",
+    "pytest>=9.1.1",
+    "ruff>=0.14.5",
+    "twine>=6.2.0",
 ]
