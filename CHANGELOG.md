@@ -5,7 +5,31 @@ All notable changes to **ytscrape** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.1.3] - 2026-08-5
+
+### Added
+
+- 💬 Collect the comments of a video with `YouTube.comments(video)`. Pass a
+  video id or any YouTube URL and iterate over the returned `CommentThread`;
+  it transparently pages through every comment (and reply), just like search
+  results. Comments are exposed as a new `Comment` model (author, text, like &
+  reply counts, published time, `is_reply`).
+- ↳ Optional reply collection: `YouTube.comments(video, include_replies=True)`
+  now also expands the replies of every comment thread. Each reply has
+  `is_reply=True` and is yielded right after the comment it replies to; the CLI
+  gained a matching `--replies` flag.
+- 🖥️ New CLI command:
+  `python -m ytscrape comments <video> [--max N] [--replies] [--sort top|newest]`.
+- 🔀 New `sort` option for comment collection:
+  `YouTube.comments(video, sort=CommentSort.NEWEST)` (or `sort="newest"`). The
+  new `CommentSort` enum (`TOP` / `NEWEST`) is exported from the package top
+  level, and the CLI gained a matching `--sort` flag.
+- 📚 New example `examples/07_video_comments.py` showing how to collect
+  comments (and their replies).
+- ❤️ Richer `Comment` model: new `heart` flag (whether the video's creator
+  hearted the comment) plus `like_count_text` / `reply_count_text` fields that
+  keep YouTube's raw counts, including abbreviations such as `1.2K` that the
+  integer `like_count` / `reply_count` cannot represent exactly.
 
 ## [0.1.2] - 2026-07-29
 

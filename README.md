@@ -35,6 +35,7 @@ dataset**, you can get started in just a few lines of code.
 - [Search filters](#search-filters)
 - [Language & country](#language--country)
 - [Pagination](#pagination)
+- [Comments](#comments)
 - [Use cases](#use-cases)
 - [Command line](#command-line)
 - [License](#license)
@@ -54,6 +55,8 @@ dataset**, you can get started in just a few lines of code.
 - 📄 **Transparent pagination** — just iterate; continuation tokens are handled
   for you.
 - 🎬 Fetch detailed **video metadata** from an id or any YouTube URL.
+- 💬 **Scrape all comments** (and replies) of a video from an id or URL, with
+  the same transparent pagination as search.
 - 🔎 Search videos, channels and playlists with a clean `SearchFilter` enum
   (no magic `EgIQAQ==` strings in your code).
 - 🌍 **Language & country support** — localise results with the `Language`
@@ -114,6 +117,12 @@ with YouTube() as yt:
     # Fetch details for a single video (id or URL both work).
     details = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     print(details.title, details.channel, details.views)
+
+    # Collect all comments of a video (id or URL both work).
+    for comment in yt.comments(
+        "https://www.youtube.com/watch?v=dQw4w9WgXcQ", max_results=20
+    ):
+        print(comment.author, "-", comment.text)
 ```
 
 ## ytscrape vs. YouTube Data API
@@ -206,12 +215,80 @@ print(results.has_more)  # is there another page?
 
 Use `max_results` to cap how many items you consume.
 
+## Comments
+
+Collect the comments of a video with `YouTube.comments()`. Pass a video id or
+any YouTube URL; the returned `CommentThread` is a lazy iterable that
+transparently pages through every comment, just like search results:
+
+```python
+from ytscrape import YouTube
+
+with YouTube() as yt:
+    for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ", max_results=50):
+        marker = "  ↳" if comment.is_reply else "-"
+        print(f"{marker} {comment.author}: {comment.text}")
+```
+
+By default only **top-level** comments are collected. Pass
+`include_replies=True` to also collect the **replies** of every thread; each
+reply has `is_reply=True` and is yielded right after the comment it replies to:
+
+```python
+with YouTube() as yt:
+    for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ", include_replies=True):
+        marker = "  ↳" if comment.is_reply else "-"
+        print(f"{marker} {comment.author}: {comment.text}")
+```
+
+Each `Comment` exposes:
+
+| Field                | Description                                            |
+| -------------------- | ------------------------------------------------------ |
+| `comment_id`         | Unique comment id.                                     |
+| `text`               | The comment body.                                      |
+| `author`             | Display name of the author.                            |
+| `author_channel_id`  | Channel id of the author (when available).             |
+| `author_thumbnail`   | URL of the author's avatar.                            |
+| `published`          | Human-readable published time (e.g. `2 days ago`).     |
+| `like_count`         | Like count as an `int` (`None` when abbreviated, e.g. `1.2K`). |
+| `like_count_text`    | Like count as YouTube renders it, keeping abbreviations (e.g. `1.2K`, `894`). |
+| `reply_count`        | Number of replies (top-level comments only).           |
+| `reply_count_text`   | Reply count as a raw display string (e.g. `64`).       |
+| `heart`              | `True` if the video's creator hearted the comment.     |
+| `is_reply`           | `True` for replies, `False` for top-level comments.    |
+
+Omit `max_results` to iterate over **all** comments; pagination is handled for
+you. When `include_replies=True`, `max_results` counts replies too. A
+`ParseError` is raised if the video has comments disabled.
+
+### Collecting *every* comment (sort order)
+
+YouTube's default **"Top comments"** view quietly **hides some comments**
+(less relevant ones and "potential spam"), so collecting in that order will
+appear to *skip* comments. To get **every** comment, switch the sort order to
+**"Newest first"** with the `sort` parameter:
+
+```python
+from ytscrape import YouTube, CommentSort
+
+with YouTube() as yt:
+    # `CommentSort.NEWEST` (or the string "newest") returns every comment.
+    for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ", sort=CommentSort.NEWEST):
+        print(comment.author, "-", comment.text)
+```
+
+`sort` accepts a `CommentSort` (`TOP` / `NEWEST`) or its string value
+(`"top"` / `"newest"`); it defaults to `CommentSort.TOP` to mirror YouTube's
+default view.
+
 ## Use cases
 
 `ytscrape` is a great fit when you want to:
 
 - **Scrape YouTube search results** for a keyword or topic.
 - **Extract YouTube video data** (title, channel, views, duration, thumbnails).
+- **Scrape YouTube comments** (and replies) for sentiment or audience analysis.
 - **Collect YouTube channel and playlist listings** at scale.
 - **Build research datasets** for analytics or machine learning.
 - **Build recommendation engines** on top of real YouTube data.
@@ -229,6 +306,15 @@ python -m ytscrape --language uk --region UA search "музика" --max 10
 
 # Video details
 python -m ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
+
+# Collect comments (pass 0 to --max for no limit)
+python -m ytscrape comments https://www.youtube.com/watch?v=dQw4w9WgXcQ --max 20
+
+# Collect comments together with their replies
+python -m ytscrape comments https://www.youtube.com/watch?v=dQw4w9WgXcQ --replies
+
+# Collect EVERY comment (the default "top" order hides some)
+python -m ytscrape comments https://www.youtube.com/watch?v=dQw4w9WgXcQ --sort newest
 ```
 
 After installing, a `ytscrape` console script is also available:

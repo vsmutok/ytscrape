@@ -157,6 +157,26 @@ class TestPlayer:
         assert "context" in payload
 
 
+class TestNext:
+    def test_next_video_id_payload(self) -> None:
+        session = FakeSession(post_response=FakeResponse(json_data={"n": 1}))
+        client = InnerTubeClient(session=session)
+        result = client.next("vid123")
+        assert result == {"n": 1}
+        payload = session.post_calls[0]["json"]
+        assert payload["videoId"] == "vid123"
+        assert "continuation" not in payload
+        assert session.post_calls[0]["url"].endswith("next?key=KEY")
+
+    def test_next_continuation_payload(self) -> None:
+        session = FakeSession()
+        client = InnerTubeClient(session=session)
+        client.next(continuation="TOKEN")
+        payload = session.post_calls[0]["json"]
+        assert payload["continuation"] == "TOKEN"
+        assert "videoId" not in payload
+
+
 class TestLifecycle:
     def test_close_closes_session(self) -> None:
         session = FakeSession()

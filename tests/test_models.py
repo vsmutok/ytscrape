@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ytscrape import Channel, Playlist, Video, VideoDetails
+from ytscrape import Channel, Comment, Playlist, Video, VideoDetails
 
 
 class TestVideoUrl:
@@ -233,3 +233,83 @@ class TestVideoDetails:
         assert details.video_id == ""
         assert details.keywords == ()
         assert details.is_live is False
+
+
+class TestComment:
+    def test_from_entity_payload(self) -> None:
+        payload = {
+            "properties": {
+                "commentId": "c1",
+                "content": {"content": "Great video!"},
+                "publishedTime": "2 days ago",
+            },
+            "author": {
+                "displayName": "Alice",
+                "channelId": "UCalice",
+                "avatarThumbnailUrl": "https://avatar.jpg",
+            },
+            "toolbar": {"likeCountLiked": "12", "replyCount": "3"},
+        }
+        comment = Comment.from_entity_payload(payload)
+        assert comment.comment_id == "c1"
+        assert comment.text == "Great video!"
+        assert comment.author == "Alice"
+        assert comment.author_channel_id == "UCalice"
+        assert comment.author_thumbnail == "https://avatar.jpg"
+        assert comment.published == "2 days ago"
+        assert comment.like_count == 12
+        assert comment.like_count_text == "12"
+        assert comment.reply_count == 3
+        assert comment.reply_count_text == "3"
+        assert comment.heart is False
+        assert comment.is_reply is False
+
+    def test_from_entity_payload_heart(self) -> None:
+        payload = {"properties": {"commentId": "h1"}, "author": {}, "toolbar": {}}
+        comment = Comment.from_entity_payload(payload, heart=True)
+        assert comment.heart is True
+
+    def test_from_entity_payload_reply_flag(self) -> None:
+        payload = {"properties": {"commentId": "r1"}, "author": {}, "toolbar": {}}
+        comment = Comment.from_entity_payload(payload, is_reply=True)
+        assert comment.comment_id == "r1"
+        assert comment.is_reply is True
+
+    def test_from_entity_payload_abbreviated_like_count(self) -> None:
+        payload = {
+            "properties": {"commentId": "c2"},
+            "author": {},
+            "toolbar": {"likeCountLiked": "1.2K"},
+        }
+        comment = Comment.from_entity_payload(payload)
+        # Non-numeric abbreviations cannot be represented exactly as an int,
+        # but the raw display string is preserved.
+        assert comment.like_count is None
+        assert comment.like_count_text == "1.2K"
+
+    def test_from_renderer(self) -> None:
+        renderer = {
+            "commentId": "x1",
+            "contentText": {"runs": [{"text": "Hello "}, {"text": "there"}]},
+            "authorText": {"simpleText": "Bob"},
+            "authorEndpoint": {"browseEndpoint": {"browseId": "UCbob"}},
+            "authorThumbnail": {"thumbnails": [{"url": "http://a.jpg"}]},
+            "publishedTimeText": {"simpleText": "1 week ago"},
+            "replyCount": 4,
+        }
+        comment = Comment.from_renderer(renderer, is_reply=True)
+        assert comment.comment_id == "x1"
+        assert comment.text == "Hello there"
+        assert comment.author == "Bob"
+        assert comment.author_channel_id == "UCbob"
+        assert comment.author_thumbnail == "http://a.jpg"
+        assert comment.published == "1 week ago"
+        assert comment.reply_count == 4
+        assert comment.reply_count_text == "4"
+        assert comment.heart is False
+        assert comment.is_reply is True
+
+    def test_from_renderer_heart(self) -> None:
+        renderer = {"commentId": "x2", "isHearted": True}
+        assert Comment.from_renderer(renderer).heart is True
+        assert Comment.from_renderer({"commentId": "x3"}, heart=True).heart is True

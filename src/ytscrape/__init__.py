@@ -24,10 +24,10 @@ from .exceptions import (
     RequestError,
     YtScraperError,
 )
-from .filters import SearchFilter
+from .filters import CommentSort, SearchFilter
 from .locale import Country, Language, Locale
-from .models import Channel, Playlist, Video, VideoDetails
-from .results import SearchResults
+from .models import Channel, Comment, Playlist, Video, VideoDetails
+from .results import CommentThread, SearchResults
 from .youtube import YouTube
 
 __version__ = "0.1.2"
@@ -35,14 +35,17 @@ __version__ = "0.1.2"
 __all__ = [
     "YouTube",
     "SearchFilter",
+    "CommentSort",
     "Language",
     "Country",
     "Locale",
     "SearchResults",
+    "CommentThread",
     "Video",
     "Channel",
     "Playlist",
     "VideoDetails",
+    "Comment",
     "InnerTubeClient",
     "InnerTubeContext",
     "ContextExtractor",

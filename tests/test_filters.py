@@ -1,10 +1,10 @@
-"""Tests for the :class:`SearchFilter` enum."""
+"""Tests for the :class:`SearchFilter` and :class:`CommentSort` enums."""
 
 from __future__ import annotations
 
 import pytest
 
-from ytscrape import SearchFilter
+from ytscrape import CommentSort, SearchFilter
 
 
 class TestSearchFilterParams:
@@ -47,3 +47,31 @@ class TestSearchFilterFromValue:
     def test_is_str_enum(self) -> None:
         # SearchFilter subclasses str, so members compare equal to their value.
         assert SearchFilter.VIDEOS == "videos"
+
+
+class TestCommentSort:
+    @pytest.mark.parametrize(
+        ("member", "title", "index"),
+        [
+            (CommentSort.TOP, "Top comments", 0),
+            (CommentSort.NEWEST, "Newest first", 1),
+        ],
+    )
+    def test_menu_lookup_values(
+        self, member: CommentSort, title: str, index: int
+    ) -> None:
+        assert member.menu_title == title
+        assert member.menu_index == index
+
+    def test_passes_through_enum_member(self) -> None:
+        assert CommentSort.from_value(CommentSort.NEWEST) is CommentSort.NEWEST
+
+    def test_coerces_mixed_case_string(self) -> None:
+        assert CommentSort.from_value("Newest") is CommentSort.NEWEST
+
+    def test_unknown_string_raises(self) -> None:
+        with pytest.raises(ValueError, match="Unknown comment sort"):
+            CommentSort.from_value("oldest")
+
+    def test_is_str_enum(self) -> None:
+        assert CommentSort.NEWEST == "newest"

@@ -12,7 +12,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
-__all__ = ["Video", "Channel", "Playlist", "VideoDetails"]
+__all__ = ["Video", "Channel", "Playlist", "VideoDetails", "Comment"]
 
 
 def _text(node: Any) -> str | None:
@@ -306,3 +306,137 @@ class VideoDetails:
             is_live=bool(details.get("isLiveContent", False)),
             thumbnail=_thumbnail(details.get("thumbnail")),
         )
+
+
+def _int_or_none(value: Any) -> int | None:
+    """Best-effort parse of an int from a value that may be ``None``/text."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return None
+
+
+@dataclass(frozen=True, slots=True)
+class Comment:
+    """A single comment (top-level or reply) on a video."""
+
+    comment_id: str
+    text: str | None = None
+    author: str | None = None
+    author_channel_id: str | None = None
+    author_thumbnail: str | None = None
+    published: str | None = None
+    like_count: int | None = None
+    like_count_text: str | None = None
+    reply_count: int | None = None
+    reply_count_text: str | None = None
+    heart: bool = False
+    is_reply: bool = False
+
+    @classmethod
+    def from_entity_payload(
+        cls,
+        payload: dict[str, Any],
+        *,
+        is_reply: bool = False,
+        heart: bool = False,
+    ) -> Comment:
+        """Build a :class:`Comment` from a modern ``commentEntityPayload``.
+
+        This is the shape used by the current ``next`` endpoint responses,
+        where comments live in ``frameworkUpdates`` mutations and are
+        referenced from ``commentViewModel`` renderers. ``heart`` reflects
+        whether the video's creator hearted the comment; it lives in a separate
+        toolbar-state mutation, so the caller resolves it and passes it in.
+        """
+        props = payload.get("properties", {}) or {}
+        author = payload.get("author", {}) or {}
+        toolbar = payload.get("toolbar", {}) or {}
+
+        content = props.get("content", {})
+        text = content.get("content") if isinstance(content, dict) else None
+
+        avatar = author.get("avatarThumbnailUrl")
+
+        like_text = _count_text(
+            toolbar.get("likeCountNotliked") or toolbar.get("likeCountLiked")
+        )
+        reply_text = _count_text(toolbar.get("replyCount"))
+
+        return cls(
+            comment_id=props.get("commentId", ""),
+            text=text,
+            author=author.get("displayName"),
+            author_channel_id=author.get("channelId"),
+            author_thumbnail=avatar if isinstance(avatar, str) else None,
+            published=props.get("publishedTime"),
+            like_count=_int_or_none(toolbar.get("likeCountNotliked") or None)
+            or _parse_count(toolbar.get("likeCountLiked")),
+            like_count_text=like_text,
+            reply_count=_parse_count(toolbar.get("replyCount")),
+            reply_count_text=reply_text,
+            heart=heart,
+            is_reply=is_reply,
+        )
+
+    @classmethod
+    def from_renderer(
+        cls,
+        renderer: dict[str, Any],
+        *,
+        is_reply: bool = False,
+        heart: bool = False,
+    ) -> Comment:
+        """Build a :class:`Comment` from a classic ``commentRenderer``."""
+        author_endpoint = renderer.get("authorEndpoint", {}).get("browseEndpoint", {})
+        vote_count = renderer.get("voteCount")
+        like_text = (
+            _count_text(_text(vote_count))
+            if isinstance(vote_count, dict)
+            else _count_text(renderer.get("likeCount"))
+        )
+        return cls(
+            comment_id=renderer.get("commentId", ""),
+            text=_text(renderer.get("contentText")),
+            author=_text(renderer.get("authorText")),
+            author_channel_id=author_endpoint.get("browseId"),
+            author_thumbnail=_thumbnail(renderer.get("authorThumbnail")),
+            published=_text(renderer.get("publishedTimeText")),
+            like_count=_parse_count(vote_count)
+            if isinstance(vote_count, dict)
+            else _int_or_none(renderer.get("likeCount")),
+            like_count_text=like_text,
+            reply_count=_int_or_none(renderer.get("replyCount")),
+            reply_count_text=_count_text(renderer.get("replyCount")),
+            heart=heart or bool(renderer.get("isHearted", False)),
+            is_reply=is_reply,
+        )
+
+
+def _parse_count(value: Any) -> int | None:
+    """Parse a like/reply count that may be a plain number or a text node.
+
+    YouTube exposes these counts either as an integer-ish string
+    (``"1.2K"``, ``"42"``) or as a ``runs``/``simpleText`` node. Non-numeric
+    abbreviations such as ``"1.2K"`` are left as ``None`` because they cannot
+    be represented exactly as an ``int``.
+    """
+    if isinstance(value, dict):
+        value = _text(value)
+    return _int_or_none(value)
+
+
+def _count_text(value: Any) -> str | None:
+    """Return a like/reply count as its raw display string.
+
+    Unlike :func:`_parse_count`, this keeps YouTube's exact rendering,
+    including abbreviations such as ``"1.2K"`` or ``"894"``. A ``runs`` /
+    ``simpleText`` node is flattened to plain text first; empty strings and
+    missing values collapse to ``None``.
+    """
+    if isinstance(value, dict):
+        value = _text(value)
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
