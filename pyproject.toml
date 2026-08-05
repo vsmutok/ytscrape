@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytscrape"
-version = "0.1.2"
+version = "0.1.3"
 description = "YouTube scraper for Python — search videos, channels and playlists and fetch video metadata via the InnerTube API, no API key required."
 readme = "README.md"
 license = { file = "LICENSE" }
