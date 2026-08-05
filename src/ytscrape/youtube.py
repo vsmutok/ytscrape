@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 from urllib.parse import parse_qs, urlparse
 
+from . import parsing
 from .client import InnerTubeClient
 from .exceptions import ParseError
-from .filters import SearchFilter
+from .filters import CommentSort, SearchFilter
 from .locale import Country, Language, Locale
 from .models import VideoDetails
-from .results import SearchResults
+from .results import CommentThread, SearchResults
 
 __all__ = ["YouTube"]
 
@@ -108,6 +109,85 @@ class YouTube:
         video_id = self._normalize_video_id(video)
         response = self._client.player(video_id)
         return VideoDetails.from_player_response(response)
+
+    def comments(
+        self,
+        video: str,
+        *,
+        max_results: int | None = None,
+        include_replies: bool = False,
+        sort: CommentSort | str = CommentSort.TOP,
+    ) -> CommentThread:
+        """Collect the comments of a video and return a paginated thread.
+
+        Pass a video id or any YouTube URL that contains one; the returned
+        :class:`~ytscrape.results.CommentThread` is a lazy iterable that
+        transparently pages through every comment::
+
+            with YouTube() as yt:
+                for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ"):
+                    print(comment.author, comment.text)
+
+        By default only top-level comments are collected. Set
+        ``include_replies=True`` to also collect the replies of every thread;
+        each reply has :attr:`~ytscrape.models.Comment.is_reply` set to ``True``
+        and is yielded right after the comment it replies to.
+
+        The ``sort`` order matters for completeness: YouTube's default
+        ``"top"`` view (``CommentSort.TOP``) intentionally **omits some
+        comments** (less relevant ones and "potential spam"), while
+        ``"newest"`` (``CommentSort.NEWEST``) lists *every* comment. Use
+        ``sort="newest"`` when you need to collect them all.
+
+        Args:
+            video: A video id or any YouTube URL that contains one
+                (``watch?v=``, ``youtu.be/``, ``/shorts/`` and ``/embed/`` are
+                all supported).
+            max_results: Optional cap on the total number of comments yielded
+                when iterating. ``None`` means iterate until YouTube runs out
+                of pages. The cap counts replies too when ``include_replies``
+                is enabled.
+            include_replies: When ``True``, also collect the replies of each
+                comment (not just the top-level comments).
+            sort: The order in which comments are collected. ``CommentSort.TOP``
+                (the default) mirrors YouTube's "Top comments" view but hides
+                some comments; ``CommentSort.NEWEST`` returns every comment.
+                Accepts a :class:`~ytscrape.filters.CommentSort` or its string
+                value (``"top"`` / ``"newest"``).
+
+        Raises:
+            ParseError: If the comments section cannot be located for the
+                video (e.g. comments are disabled).
+        """
+        sort_order = CommentSort.from_value(sort)
+        video_id = self._normalize_video_id(video)
+        watch_page = self._client.next(video_id)
+        token = parsing.find_comments_continuation(watch_page)
+        if token is None:
+            raise ParseError(
+                f"Could not find a comments section for video {video_id!r} "
+                "(comments may be disabled)."
+            )
+        first_page = self._client.next(continuation=token)
+
+        # The comments feed always opens on "Top comments". When a different
+        # order is requested, follow the sort menu's own continuation token to
+        # re-open the feed in that order (``None`` means it's already selected).
+        if sort_order is not CommentSort.TOP:
+            sort_token = parsing.find_comments_sort_continuation(
+                first_page,
+                title=sort_order.menu_title,
+                index=sort_order.menu_index,
+            )
+            if sort_token is not None:
+                first_page = self._client.next(continuation=sort_token)
+
+        return CommentThread(
+            self._client,
+            first_page,
+            max_results=max_results,
+            include_replies=include_replies,
+        )
 
     def close(self) -> None:
         """Close the underlying HTTP session."""

@@ -12,7 +12,7 @@ import sys
 
 from . import YouTube, __version__
 from .exceptions import YtScraperError
-from .filters import SearchFilter
+from .filters import CommentSort, SearchFilter
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -56,6 +56,33 @@ def _build_parser() -> argparse.ArgumentParser:
     video = sub.add_parser("video", help="Fetch details for a single video.")
     video.add_argument("video", help="Video id or URL.")
 
+    comments = sub.add_parser(
+        "comments", help="Collect the comments of a single video."
+    )
+    comments.add_argument("video", help="Video id or URL.")
+    comments.add_argument(
+        "--max",
+        type=int,
+        default=20,
+        dest="max_results",
+        help="Maximum number of comments to print (0 = no limit).",
+    )
+    comments.add_argument(
+        "--replies",
+        action="store_true",
+        dest="include_replies",
+        help="Also collect the replies of every comment.",
+    )
+    comments.add_argument(
+        "--sort",
+        choices=[s.value for s in CommentSort],
+        default=CommentSort.TOP.value,
+        help=(
+            "Sort order. 'top' (default) mirrors YouTube and hides some "
+            "comments; 'newest' collects every comment."
+        ),
+    )
+
     return parser
 
 
@@ -81,6 +108,16 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Views:   {details.views}")
                 print(f"Length:  {details.length_seconds}s")
                 print(f"URL:     {details.url}")
+            elif args.command == "comments":
+                max_results = args.max_results or None
+                for comment in yt.comments(
+                    args.video,
+                    max_results=max_results,
+                    include_replies=args.include_replies,
+                    sort=args.sort,
+                ):
+                    prefix = "  \u21b3 " if comment.is_reply else ""
+                    print(f"{prefix}{comment.author}: {comment.text}")
     except YtScraperError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

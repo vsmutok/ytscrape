@@ -154,6 +154,25 @@ class InnerTubeClient:
         payload = {"context": self._client_context(), "videoId": video_id}
         return self._post("player", payload)
 
+    def next(
+        self,
+        video_id: str | None = None,
+        *,
+        continuation: str | None = None,
+    ) -> dict[str, Any]:
+        """Call the ``next`` endpoint.
+
+        Either ``video_id`` (to load the watch page, which contains the token
+        that opens the comments section) or ``continuation`` (to load comment
+        threads and their replies) must be provided.
+        """
+        payload: dict[str, Any] = {"context": self._client_context()}
+        if continuation is not None:
+            payload["continuation"] = continuation
+        else:
+            payload["videoId"] = video_id or ""
+        return self._post("next", payload)
+
     def close(self) -> None:
         """Close the underlying HTTP session."""
         self._session.close()
