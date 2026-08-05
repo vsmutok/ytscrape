@@ -30,7 +30,7 @@ from .models import Channel, Comment, Playlist, Video, VideoDetails
 from .results import CommentThread, SearchResults
 from .youtube import YouTube
 
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 __all__ = [
     "YouTube",
