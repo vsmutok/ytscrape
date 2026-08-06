@@ -51,6 +51,7 @@ classifiers = [
 ]
 
 dependencies = [
+    "defusedxml>=0.7.1",
     "pycountry>=22.3.5",
     "requests>=2.28",
 ]

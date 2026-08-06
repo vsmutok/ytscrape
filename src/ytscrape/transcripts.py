@@ -18,7 +18,9 @@ from dataclasses import asdict, dataclass
 from html import unescape
 from itertools import chain
 from typing import TYPE_CHECKING, Any
-from xml.etree import ElementTree
+
+from defusedxml import ElementTree
+from defusedxml.ElementTree import ParseError as XMLParseError
 
 from .exceptions import (
     NoTranscriptFound,
@@ -382,7 +384,7 @@ def _parse_timedtext(
     html_re = _html_strip_regex(preserve_formatting)
     try:
         root = ElementTree.fromstring(raw_data)
-    except ElementTree.ParseError as exc:
+    except XMLParseError as exc:
         raise ParseError(f"Could not parse transcript XML: {exc}") from exc
 
     snippets: list[TranscriptSnippet] = []

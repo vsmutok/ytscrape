@@ -92,7 +92,7 @@ From source:
 pip install .
 ```
 
-Requires **Python 3.10+**. Runtime dependencies: `requests`, `pycountry`.
+Requires **Python 3.10+**. Runtime dependencies: `requests`, `pycountry`, `defusedxml`.
 
 ## Quick start
 

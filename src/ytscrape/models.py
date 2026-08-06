@@ -536,8 +536,8 @@ def _link_dict_key(title: str | None, url: str) -> str:
         host = host.removeprefix("www.")
         if host:
             return _slugify_link_key(host.split(".")[0])
-    except Exception:  # pragma: no cover
-        pass
+    except Exception:  # Fixme
+        return None
     return "link"
 
 
