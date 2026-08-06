@@ -12,6 +12,9 @@ the data models and the :class:`SearchFilter` enum::
 
         details = yt.video("dQw4w9WgXcQ")
         print(details.title, details.views)
+
+        transcript = yt.transcript("dQw4w9WgXcQ", languages=["en"])
+        print(transcript.text)
 """
 
 from __future__ import annotations
@@ -20,17 +23,21 @@ from .client import InnerTubeClient
 from .context import ContextExtractor, InnerTubeContext
 from .exceptions import (
     ContextExtractionError,
+    NoTranscriptFound,
     ParseError,
     RequestError,
+    TranscriptError,
+    TranscriptsDisabled,
     YtScraperError,
 )
 from .filters import CommentSort, SearchFilter
 from .locale import Country, Language, Locale
-from .models import Channel, Comment, Playlist, Video, VideoDetails
+from .models import Channel, ChannelDetails, Comment, Playlist, Video, VideoDetails
 from .results import CommentThread, SearchResults
+from .transcripts import Transcript, TranscriptList, TranscriptSnippet, TranscriptTrack
 from .youtube import YouTube
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"
 
 __all__ = [
     "YouTube",
@@ -45,7 +52,12 @@ __all__ = [
     "Channel",
     "Playlist",
     "VideoDetails",
+    "ChannelDetails",
     "Comment",
+    "Transcript",
+    "TranscriptSnippet",
+    "TranscriptTrack",
+    "TranscriptList",
     "InnerTubeClient",
     "InnerTubeContext",
     "ContextExtractor",
@@ -53,5 +65,8 @@ __all__ = [
     "ContextExtractionError",
     "RequestError",
     "ParseError",
+    "TranscriptError",
+    "TranscriptsDisabled",
+    "NoTranscriptFound",
     "__version__",
 ]

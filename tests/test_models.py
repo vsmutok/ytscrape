@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ytscrape import Channel, Comment, Playlist, Video, VideoDetails
+from ytscrape import Channel, ChannelDetails, Comment, Playlist, Video, VideoDetails
 
 
 class TestVideoUrl:
@@ -233,6 +233,210 @@ class TestVideoDetails:
         assert details.video_id == ""
         assert details.keywords == ()
         assert details.is_live is False
+
+
+class TestChannelDetails:
+    def test_url(self) -> None:
+        assert (
+            ChannelDetails(channel_id="UCabcdefghijklmnopqrstuv").url
+            == "https://www.youtube.com/channel/UCabcdefghijklmnopqrstuv"
+        )
+
+    def test_from_browse_response(self) -> None:
+        data = {
+            "metadata": {
+                "channelMetadataRenderer": {
+                    "title": "Rick Astley",
+                    "description": "Bio here",
+                    "externalId": "UCuAXFkgsw1L7xaCfnd5JJOw",
+                    "keywords": 'Official "rick astley" meme',
+                    "avatar": {"thumbnails": [{"url": "http://avatar.jpg"}]},
+                    "vanityChannelUrl": "http://www.youtube.com/@RickAstleyYT",
+                    "ownerUrls": ["http://www.youtube.com/@RickAstleyYT"],
+                    "rssUrl": "https://www.youtube.com/feeds/videos.xml?channel_id=UCuAXFkgsw1L7xaCfnd5JJOw",
+                    "isFamilySafe": True,
+                    "availableCountryCodes": ["US", "UA"],
+                }
+            },
+            "microformat": {
+                "microformatDataRenderer": {
+                    "title": "Rick Astley",
+                    "tags": ["Official", "Rick Astley"],
+                    "familySafe": True,
+                }
+            },
+            "header": {
+                "pageHeaderRenderer": {
+                    "content": {
+                        "pageHeaderViewModel": {
+                            "metadata": {
+                                "contentMetadataViewModel": {
+                                    "metadataRows": [
+                                        {
+                                            "metadataParts": [
+                                                {"text": {"content": "@RickAstleyYT"}}
+                                            ]
+                                        },
+                                        {
+                                            "metadataParts": [
+                                                {
+                                                    "text": {
+                                                        "content": "4.53M subscribers"
+                                                    }
+                                                },
+                                                {"text": {"content": "434 videos"}},
+                                            ]
+                                        },
+                                    ]
+                                }
+                            },
+                            "banner": {
+                                "imageBannerViewModel": {
+                                    "image": {
+                                        "sources": [
+                                            {"url": "http://banner-small.jpg"},
+                                            {"url": "http://banner.jpg"},
+                                        ]
+                                    }
+                                }
+                            },
+                            "attribution": {
+                                "attributionViewModel": {
+                                    "text": {"content": " rickastley.lnk.to/x "}
+                                }
+                            },
+                        }
+                    }
+                }
+            },
+        }
+        details = ChannelDetails.from_browse_response(data)
+        assert details.channel_id == "UCuAXFkgsw1L7xaCfnd5JJOw"
+        assert details.title == "Rick Astley"
+        assert details.description == "Bio here"
+        assert details.handle == "@RickAstleyYT"
+        assert details.subscribers == "4.53M subscribers"
+        assert details.video_count == "434 videos"
+        assert details.keywords == ("Official", "rick astley", "meme")
+        assert details.thumbnail == "http://avatar.jpg"
+        assert details.photo == "http://avatar.jpg"
+        assert details.banner == "http://banner.jpg"
+        assert details.vanity_url == "https://www.youtube.com/@RickAstleyYT"
+        assert details.rss_url.endswith("UCuAXFkgsw1L7xaCfnd5JJOw")
+        assert details.is_family_safe is True
+        assert details.tags == ("Official", "Rick Astley")
+        assert details.available_countries == ("US", "UA")
+        assert details.links == {"x": "https://rickastley.lnk.to/x"}
+        assert details.country is None
+        assert details.joined_date is None
+        assert details.url == (
+            "https://www.youtube.com/channel/UCuAXFkgsw1L7xaCfnd5JJOw"
+        )
+
+    def test_from_browse_response_with_about(self) -> None:
+        data = {
+            "metadata": {
+                "channelMetadataRenderer": {
+                    "title": "CodeBrux",
+                    "externalId": "UCxuAWlvSGhAM6aUY7-T5rJQ",
+                    "avatar": {"thumbnails": [{"url": "http://photo.jpg"}]},
+                }
+            },
+            "header": {
+                "pageHeaderRenderer": {
+                    "content": {
+                        "pageHeaderViewModel": {
+                            "banner": {
+                                "imageBannerViewModel": {
+                                    "image": {"sources": [{"url": "http://banner.jpg"}]}
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+        }
+        about = {
+            "aboutChannelViewModel": {
+                "description": "Channel bio",
+                "country": "Netherlands",
+                "joinedDateText": {"content": "Joined Sep 11, 2015"},
+                "viewCountText": "291,498,626 views",
+                "subscriberCountText": "1.2M subscribers",
+                "videoCountText": "400 videos",
+                "links": [
+                    {
+                        "channelExternalLinkViewModel": {
+                            "title": {"content": "Twitter"},
+                            "link": {
+                                "content": "twitter.com/CodeBrux",
+                                "commandRuns": [
+                                    {
+                                        "onTap": {
+                                            "innertubeCommand": {
+                                                "urlEndpoint": {
+                                                    "url": (
+                                                        "https://www.youtube.com/redirect?"
+                                                        "q=https%3A%2F%2Ftwitter.com%2FCodeBrux"
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                ],
+                            },
+                        }
+                    },
+                    {
+                        "channelExternalLinkViewModel": {
+                            "title": {"content": "Instagram"},
+                            "link": {
+                                "content": "instagram.com/codebrux",
+                                "commandRuns": [
+                                    {
+                                        "onTap": {
+                                            "innertubeCommand": {
+                                                "urlEndpoint": {
+                                                    "url": "https://instagram.com/codebrux"
+                                                }
+                                            }
+                                        }
+                                    }
+                                ],
+                            },
+                        }
+                    },
+                    {
+                        "channelExternalLinkViewModel": {
+                            "title": {"content": "Discord"},
+                            "link": {"content": "discord.gg/brux"},
+                        }
+                    },
+                ],
+            }
+        }
+        details = ChannelDetails.from_browse_response(data, about=about)
+        assert details.photo == "http://photo.jpg"
+        assert details.banner == "http://banner.jpg"
+        assert details.country == "Netherlands"
+        assert details.joined_date == "Joined Sep 11, 2015"
+        assert details.view_count == "291,498,626 views"
+        assert details.subscribers == "1.2M subscribers"
+        assert details.video_count == "400 videos"
+        assert details.description == "Channel bio"
+        assert details.links == {
+            "x": "https://twitter.com/CodeBrux",
+            "instagram": "https://instagram.com/codebrux",
+            "discord": "https://discord.gg/brux",
+        }
+
+    def test_from_browse_response_empty(self) -> None:
+        details = ChannelDetails.from_browse_response({})
+        assert details.channel_id == ""
+        assert details.keywords == ()
+        assert details.tags == ()
+        assert details.links == {}
+        assert details.is_family_safe is None
 
 
 class TestComment:

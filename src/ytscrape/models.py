@@ -11,8 +11,9 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import parse_qs, unquote, urlparse
 
-__all__ = ["Video", "Channel", "Playlist", "VideoDetails", "Comment"]
+__all__ = ["Video", "Channel", "Playlist", "VideoDetails", "ChannelDetails", "Comment"]
 
 
 def _text(node: Any) -> str | None:
@@ -34,6 +35,12 @@ def _thumbnail(node: Any) -> str | None:
     thumbs = node.get("thumbnails")
     if isinstance(thumbs, list) and thumbs:
         return thumbs[-1].get("url")
+    sources = node.get("sources")
+    if isinstance(sources, list) and sources:
+        last = sources[-1]
+        if isinstance(last, dict):
+            url = last.get("url")
+            return url if isinstance(url, str) else None
     return None
 
 
@@ -305,6 +312,453 @@ class VideoDetails:
             keywords=tuple(details.get("keywords", []) or ()),
             is_live=bool(details.get("isLiveContent", False)),
             thumbnail=_thumbnail(details.get("thumbnail")),
+        )
+
+
+def _split_keyword_string(raw: str | None) -> tuple[str, ...]:
+    """Split a channel ``keywords`` string that may contain quoted phrases."""
+    if not raw:
+        return ()
+    parts: list[str] = []
+    current: list[str] = []
+    in_quotes = False
+    for ch in raw:
+        if ch == '"':
+            in_quotes = not in_quotes
+            continue
+        if ch.isspace() and not in_quotes:
+            if current:
+                parts.append("".join(current))
+                current = []
+            continue
+        current.append(ch)
+    if current:
+        parts.append("".join(current))
+    return tuple(part for part in parts if part)
+
+
+def _header_metadata_texts(data: dict[str, Any]) -> list[str]:
+    """Collect plain-text metadata parts from the channel page header."""
+    texts: list[str] = []
+    try:
+        rows = (
+            data.get("header", {})
+            .get("pageHeaderRenderer", {})
+            .get("content", {})
+            .get("pageHeaderViewModel", {})
+            .get("metadata", {})
+            .get("contentMetadataViewModel", {})
+            .get("metadataRows", [])
+        )
+    except AttributeError:
+        return texts
+    if not isinstance(rows, list):
+        return texts
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        for part in row.get("metadataParts", []) or []:
+            if not isinstance(part, dict):
+                continue
+            text = part.get("text")
+            if isinstance(text, dict) and isinstance(text.get("content"), str):
+                texts.append(text["content"])
+    return texts
+
+
+def _handle_from_urls(*candidates: Any) -> str | None:
+    """Extract an ``@handle`` from vanity / owner URLs when present."""
+    for candidate in candidates:
+        values: list[Any]
+        if isinstance(candidate, list):
+            values = candidate
+        else:
+            values = [candidate]
+        for value in values:
+            if not isinstance(value, str):
+                continue
+            marker = value.rstrip("/").rsplit("/", 1)[-1]
+            if marker.startswith("@") and len(marker) > 1:
+                return marker
+    return None
+
+
+def _page_header_view_model(data: dict[str, Any]) -> dict[str, Any]:
+    """Return the channel page header view-model when present."""
+    try:
+        header = (
+            data.get("header", {})
+            .get("pageHeaderRenderer", {})
+            .get("content", {})
+            .get("pageHeaderViewModel", {})
+        )
+    except AttributeError:
+        return {}
+    return header if isinstance(header, dict) else {}
+
+
+def _banner_from_header(data: dict[str, Any]) -> str | None:
+    """Largest channel banner URL from the page header, if any."""
+    header = _page_header_view_model(data)
+    banner = header.get("banner", {})
+    if not isinstance(banner, dict):
+        return None
+    image = banner.get("imageBannerViewModel", {})
+    if isinstance(image, dict):
+        return _thumbnail(image.get("image"))
+    return _thumbnail(banner)
+
+
+def _find_first(data: Any, key: str) -> Any:
+    """Depth-first search for the first value stored under ``key``."""
+    if isinstance(data, dict):
+        if key in data:
+            return data[key]
+        for value in data.values():
+            found = _find_first(value, key)
+            if found is not None:
+                return found
+    elif isinstance(data, list):
+        for item in data:
+            found = _find_first(item, key)
+            if found is not None:
+                return found
+    return None
+
+
+def _about_continuation_token(data: dict[str, Any]) -> str | None:
+    """Continuation token used to load the channel About engagement panel."""
+    header = _page_header_view_model(data)
+    description = header.get("description")
+    if not isinstance(description, dict):
+        return None
+
+    def _token(node: Any) -> str | None:
+        if isinstance(node, dict):
+            command = node.get("continuationCommand")
+            if isinstance(command, dict):
+                token = command.get("token")
+                if isinstance(token, str) and token:
+                    return token
+            for value in node.values():
+                found = _token(value)
+                if found is not None:
+                    return found
+        elif isinstance(node, list):
+            for item in node:
+                found = _token(item)
+                if found is not None:
+                    return found
+        return None
+
+    return _token(description)
+
+
+def _content_text(value: Any) -> str | None:
+    """Extract plain text from a simple string or ``{content: ...}`` node."""
+    if isinstance(value, str):
+        text = value.strip()
+        return text or None
+    if isinstance(value, dict):
+        content = value.get("content")
+        if isinstance(content, str):
+            text = content.strip()
+            return text or None
+        simple = value.get("simpleText")
+        if isinstance(simple, str):
+            text = simple.strip()
+            return text or None
+    return None
+
+
+def _unwrap_youtube_redirect(url: str) -> str:
+    """Resolve ``youtube.com/redirect?q=…`` wrappers to the target URL."""
+    if "youtube.com/redirect" not in url and "/redirect?" not in url:
+        return url
+    try:
+        query = parse_qs(urlparse(url).query)
+        targets = query.get("q") or []
+        if targets:
+            return unquote(targets[0])
+    except Exception:  # pragma: no cover - extremely defensive
+        return url
+    return url
+
+
+_LINK_PLATFORM_HINTS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("instagram", ("instagram.com", "instagram")),
+    ("x", ("twitter.com", "x.com", "twitter", "/x", " x")),
+    ("tiktok", ("tiktok.com", "tiktok")),
+    ("facebook", ("facebook.com", "fb.com", "facebook")),
+    ("youtube", ("youtube.com", "youtu.be", "youtube")),
+    ("spotify", ("spotify.com", "spotify")),
+    ("apple_music", ("music.apple.com", "apple music", "apple_music")),
+    ("discord", ("discord.gg", "discord.com", "discord")),
+    ("twitch", ("twitch.tv", "twitch")),
+    ("reddit", ("reddit.com", "reddit")),
+    ("linkedin", ("linkedin.com", "linkedin")),
+    ("telegram", ("t.me", "telegram.me", "telegram")),
+    ("onlyfans", ("onlyfans.com", "onlyfans")),
+    ("patreon", ("patreon.com", "patreon")),
+    ("github", ("github.com", "github")),
+    ("website", ("website", "official", "home")),
+)
+
+
+def _slugify_link_key(value: str) -> str:
+    """Turn free-form link titles into stable dictionary keys."""
+    cleaned = []
+    prev_underscore = False
+    for ch in value.strip().lower():
+        if ch.isalnum():
+            cleaned.append(ch)
+            prev_underscore = False
+        elif not prev_underscore:
+            cleaned.append("_")
+            prev_underscore = True
+    slug = "".join(cleaned).strip("_")
+    return slug or "link"
+
+
+def _link_dict_key(title: str | None, url: str) -> str:
+    """Pick a stable platform-oriented key for an external channel link."""
+    title_l = (title or "").strip().lower()
+    if title_l in {"x", "twitter", "x.com"}:
+        return "x"
+    haystack = f"{title_l} {url}".lower()
+    for key, hints in _LINK_PLATFORM_HINTS:
+        if any(hint in haystack for hint in hints):
+            return key
+    if title:
+        return _slugify_link_key(title)
+    try:
+        host = urlparse(url if "://" in url else f"https://{url}").netloc
+        host = host.removeprefix("www.")
+        if host:
+            return _slugify_link_key(host.split(".")[0])
+    except Exception:  # pragma: no cover
+        pass
+    return "link"
+
+
+def _unique_link_key(base: str, used: set[str]) -> str:
+    """Ensure dictionary keys stay unique when several links share a platform."""
+    if base not in used:
+        used.add(base)
+        return base
+    index = 2
+    while f"{base}_{index}" in used:
+        index += 1
+    key = f"{base}_{index}"
+    used.add(key)
+    return key
+
+
+def _external_link_url(view_model: dict[str, Any]) -> str | None:
+    """Extract the destination URL from a channel external-link view model."""
+    link = view_model.get("link")
+    if not isinstance(link, dict):
+        return None
+    for run in link.get("commandRuns") or []:
+        if not isinstance(run, dict):
+            continue
+        endpoint = (
+            (run.get("onTap") or {}).get("innertubeCommand", {}).get("urlEndpoint", {})
+        )
+        if isinstance(endpoint, dict) and isinstance(endpoint.get("url"), str):
+            return _unwrap_youtube_redirect(endpoint["url"])
+    content = link.get("content")
+    if isinstance(content, str) and content.strip():
+        text = content.strip()
+        if text.startswith("http://") or text.startswith("https://"):
+            return text
+        return f"https://{text}"
+    return None
+
+
+def _links_from_about(about: dict[str, Any]) -> dict[str, str]:
+    """Build ``{platform: url}`` from an ``aboutChannelViewModel``."""
+    raw_links = about.get("links")
+    if not isinstance(raw_links, list):
+        return {}
+    result: dict[str, str] = {}
+    used: set[str] = set()
+    for item in raw_links:
+        if not isinstance(item, dict):
+            continue
+        view = item.get("channelExternalLinkViewModel")
+        if not isinstance(view, dict):
+            continue
+        title = _content_text(view.get("title"))
+        url = _external_link_url(view)
+        if not url:
+            continue
+        key = _unique_link_key(_link_dict_key(title, url), used)
+        result[key] = url
+    return result
+
+
+def _links_from_attribution(data: dict[str, Any]) -> dict[str, str]:
+    """Fallback single link taken from the header attribution row."""
+    header = _page_header_view_model(data)
+    try:
+        attribution = (
+            header.get("attribution", {})
+            .get("attributionViewModel", {})
+            .get("text", {})
+        )
+    except AttributeError:
+        return {}
+    text = _content_text(attribution)
+    if not text:
+        return {}
+    url = text if text.startswith("http") else f"https://{text}"
+    return {_link_dict_key(None, url): url}
+
+
+@dataclass(frozen=True, slots=True)
+class ChannelDetails:
+    """Detailed metadata about a single channel fetched by id/URL/handle."""
+
+    channel_id: str
+    title: str | None = None
+    description: str | None = None
+    handle: str | None = None
+    subscribers: str | None = None
+    video_count: str | None = None
+    view_count: str | None = None
+    keywords: tuple[str, ...] = field(default_factory=tuple)
+    thumbnail: str | None = None
+    photo: str | None = None
+    banner: str | None = None
+    vanity_url: str | None = None
+    rss_url: str | None = None
+    is_family_safe: bool | None = None
+    tags: tuple[str, ...] = field(default_factory=tuple)
+    available_countries: tuple[str, ...] = field(default_factory=tuple)
+    country: str | None = None
+    joined_date: str | None = None
+    links: dict[str, str] = field(default_factory=dict)
+
+    @property
+    def url(self) -> str:
+        """Canonical channel URL."""
+        return f"https://www.youtube.com/channel/{self.channel_id}"
+
+    @classmethod
+    def from_browse_response(
+        cls,
+        data: dict[str, Any],
+        *,
+        about: dict[str, Any] | None = None,
+    ) -> ChannelDetails:
+        """Build :class:`ChannelDetails` from a ``browse`` endpoint response.
+
+        Pass the optional About-panel payload (or a full continuation response
+        that embeds ``aboutChannelViewModel``) as ``about`` to fill country,
+        joined date, view count and the labelled external links dictionary.
+        """
+        meta = data.get("metadata", {}).get("channelMetadataRenderer", {})
+        if not isinstance(meta, dict):
+            meta = {}
+        micro = data.get("microformat", {}).get("microformatDataRenderer", {})
+        if not isinstance(micro, dict):
+            micro = {}
+
+        about_vm: dict[str, Any] = {}
+        if isinstance(about, dict):
+            if "aboutChannelViewModel" in about and isinstance(
+                about.get("aboutChannelViewModel"), dict
+            ):
+                about_vm = about["aboutChannelViewModel"]
+            else:
+                found = _find_first(about, "aboutChannelViewModel")
+                if isinstance(found, dict):
+                    about_vm = found
+
+        header_texts = _header_metadata_texts(data)
+        handle = None
+        subscribers = None
+        video_count = None
+        for text in header_texts:
+            if text.startswith("@") and handle is None:
+                handle = text
+            elif "subscriber" in text.lower() and subscribers is None:
+                subscribers = text
+            elif "video" in text.lower() and video_count is None:
+                video_count = text
+
+        if handle is None:
+            handle = _handle_from_urls(
+                meta.get("vanityChannelUrl"),
+                meta.get("ownerUrls"),
+            )
+
+        vanity = meta.get("vanityChannelUrl") or meta.get("channelUrl")
+        if isinstance(vanity, str) and vanity.startswith("http://"):
+            vanity = "https://" + vanity[len("http://") :]
+
+        keywords = _split_keyword_string(meta.get("keywords"))
+        tags = tuple(micro.get("tags") or ())
+        if not keywords and tags:
+            keywords = tags
+
+        countries = meta.get("availableCountryCodes") or micro.get("availableCountries")
+        if not isinstance(countries, list):
+            countries = []
+
+        links = _links_from_about(about_vm) if about_vm else {}
+        if not links:
+            links = _links_from_attribution(data)
+
+        if about_vm:
+            subscribers = subscribers or _content_text(
+                about_vm.get("subscriberCountText")
+            )
+            video_count = video_count or _content_text(about_vm.get("videoCountText"))
+            description = (
+                _content_text(about_vm.get("description"))
+                or meta.get("description")
+                or micro.get("description")
+            )
+            country = _content_text(about_vm.get("country"))
+            joined_date = _content_text(about_vm.get("joinedDateText"))
+            view_count = _content_text(about_vm.get("viewCountText"))
+        else:
+            description = meta.get("description") or micro.get("description")
+            country = None
+            joined_date = None
+            view_count = None
+
+        channel_id = meta.get("externalId") or about_vm.get("channelId") or ""
+        family_safe = meta.get("isFamilySafe")
+        if family_safe is None:
+            family_safe = micro.get("familySafe")
+
+        photo = _thumbnail(meta.get("avatar")) or _thumbnail(micro.get("thumbnail"))
+
+        return cls(
+            channel_id=channel_id if isinstance(channel_id, str) else "",
+            title=meta.get("title") or micro.get("title"),
+            description=description,
+            handle=handle,
+            subscribers=subscribers,
+            video_count=video_count,
+            view_count=view_count,
+            keywords=keywords,
+            thumbnail=photo,
+            photo=photo,
+            banner=_banner_from_header(data),
+            vanity_url=vanity if isinstance(vanity, str) else None,
+            rss_url=meta.get("rssUrl") if isinstance(meta.get("rssUrl"), str) else None,
+            is_family_safe=bool(family_safe) if family_safe is not None else None,
+            tags=tags,
+            available_countries=tuple(
+                code for code in countries if isinstance(code, str)
+            ),
+            country=country,
+            joined_date=joined_date,
+            links=links,
         )
 
 

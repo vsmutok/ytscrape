@@ -7,6 +7,7 @@ priority. `[x]` — done, `[ ]` — not yet, 🔥 — blocks the release.
 
 - [x] Search: videos, channels, playlists, shorts, movies
 - [x] Video details (`yt.video()`)
+- [x] Channel metadata (`yt.channel()`)
 - [x] Comments with transparent pagination
 - [x] Replies (`include_replies=True`)
 - [x] Comment sorting (`sort="top" | "newest"`)
@@ -22,10 +23,10 @@ priority. `[x]` — done, `[ ]` — not yet, 🔥 — blocks the release.
 
 ## InnerTube coverage
 
-- [ ] Channel metadata (`yt.channel()`)
+- [x] Channel metadata (`yt.channel()`)
 - [ ] Channel tabs: videos, shorts, live, playlists
 - [ ] Playlist items (`yt.playlist()`)
-- [ ] Transcripts / subtitles
+- [x] Transcripts / subtitles (`yt.transcript()` / `yt.transcripts()`)
 - [ ] Related videos
 - [ ] Trending / home feed
 - [ ] Community posts
@@ -59,7 +60,8 @@ priority. `[x]` — done, `[ ]` — not yet, 🔥 — blocks the release.
 ## CLI
 
 - [ ] `--json` / `--jsonl` / `--csv` output
-- [ ] Commands for new features (channel, playlist, transcript, trending)
+- [x] Commands for channel + transcript (playlist/trending still open)
+- [ ] Commands for playlist, trending
 - [ ] `--output`, `--quiet`, `--limit`, stable exit codes
 - [ ] Progress bar for long collections
 - [ ] Proper argument parser with subcommand help
@@ -79,6 +81,7 @@ priority. `[x]` — done, `[ ]` — not yet, 🔥 — blocks the release.
 - [ ] Docs site (MkDocs) on GitHub Pages
 - [ ] API reference from docstrings
 - [ ] Legal / ToS section
-- [ ] Examples for channels, playlists, transcripts, async, CSV export
+- [x] Examples for channels + transcripts
+- [ ] Examples for playlists, async, CSV export
 - [ ] CLI demo GIF in the README
 - [ ] Reproducible benchmarks vs `yt-dlp` / Playwright

@@ -10,12 +10,23 @@ from .client import InnerTubeClient
 from .exceptions import ParseError
 from .filters import CommentSort, SearchFilter
 from .locale import Country, Language, Locale
-from .models import VideoDetails
+from .models import ChannelDetails, VideoDetails, _about_continuation_token
 from .results import CommentThread, SearchResults
+from .transcripts import (
+    Transcript,
+    TranscriptList,
+    fetch_transcript,
+    list_transcripts,
+)
 
 __all__ = ["YouTube"]
 
 _VIDEO_ID_RE = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_CHANNEL_ID_RE = re.compile(r"^UC[\w-]{22}$")
+_HANDLE_RE = re.compile(r"^@[\w.-]{3,}$")
+_CHANNEL_ID_IN_HTML_RE = re.compile(
+    r'"(?:externalId|channelId|browseId)":"(UC[\w-]{22})"'
+)
 
 
 class YouTube:
@@ -32,6 +43,12 @@ class YouTube:
 
         details = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
         print(details.title, details.views)
+
+        channel = yt.channel("@RickAstleyYT")
+        print(channel.title, channel.subscribers)
+
+        transcript = yt.transcript("dQw4w9WgXcQ", languages=["en"])
+        print(transcript.text[:200])
 
     Args:
         client: A pre-built :class:`InnerTubeClient`. When omitted, one is
@@ -98,6 +115,43 @@ class YouTube:
         first_page = self._client.search(query, params=search_filter.params)
         return SearchResults(self._client, first_page, max_results=max_results)
 
+    def transcript(
+        self,
+        video: str,
+        *,
+        languages: list[str] | tuple[str, ...] = ("en",),
+        preserve_formatting: bool = False,
+    ) -> Transcript:
+        """Fetch a transcript/captions track for a video.
+
+        Languages are tried in order. Manually created captions are preferred
+        over auto-generated ones (same behaviour as youtube-transcript-api).
+
+        Args:
+            video: Video id or any YouTube watch URL.
+            languages: Preferred language codes, e.g. ``("uk", "en")``.
+            preserve_formatting: Keep a small set of HTML tags (``<i>``,
+                ``<b>``, …) inside snippet text.
+        """
+        video_id = self._normalize_video_id(video)
+        return fetch_transcript(
+            self._client,
+            video_id,
+            languages=languages,
+            preserve_formatting=preserve_formatting,
+        )
+
+    def transcripts(self, video: str) -> TranscriptList:
+        """List available caption tracks for a video (without downloading them).
+
+        Iterate the result or use
+        :meth:`~ytscrape.transcripts.TranscriptList.find_transcript` /
+        :meth:`~ytscrape.transcripts.TranscriptTrack.fetch` /
+        :meth:`~ytscrape.transcripts.TranscriptTrack.translate`.
+        """
+        video_id = self._normalize_video_id(video)
+        return list_transcripts(self._client, video_id)
+
     def video(self, video: str) -> VideoDetails:
         """Fetch detailed metadata for a single video.
 
@@ -109,6 +163,25 @@ class YouTube:
         video_id = self._normalize_video_id(video)
         response = self._client.player(video_id)
         return VideoDetails.from_player_response(response)
+
+    def channel(self, channel: str) -> ChannelDetails:
+        """Fetch detailed metadata for a single channel.
+
+        Args:
+            channel: A channel id (``UC…``), a ``@handle``, or any YouTube
+                channel URL (``/channel/UC…``, ``/@handle``, ``/c/…``,
+                ``/user/…``).
+        """
+        channel_id = self._normalize_channel_id(channel)
+        response = self._client.browse(channel_id)
+        about_response = None
+        about_token = _about_continuation_token(response)
+        if about_token is not None:
+            about_response = self._client.browse(channel_id, continuation=about_token)
+        details = ChannelDetails.from_browse_response(response, about=about_response)
+        if not details.channel_id:
+            raise ParseError(f"Could not parse channel metadata for {channel_id!r}.")
+        return details
 
     def comments(
         self,
@@ -219,3 +292,55 @@ class YouTube:
                 return segment
 
         raise ParseError(f"Could not extract a video id from {value!r}.")
+
+    def _normalize_channel_id(self, value: str) -> str:
+        """Extract a ``UC…`` channel id from an id, handle or URL."""
+        value = value.strip()
+        if _CHANNEL_ID_RE.match(value):
+            return value
+
+        if _HANDLE_RE.match(value):
+            return self._resolve_channel_id_from_url(f"https://www.youtube.com/{value}")
+
+        parsed = urlparse(value)
+        segments = [seg for seg in parsed.path.split("/") if seg]
+        if not segments and not parsed.netloc:
+            # Bare custom name without @ — try resolving as a handle URL.
+            if re.match(r"^[\w.-]{3,}$", value):
+                return self._resolve_channel_id_from_url(
+                    f"https://www.youtube.com/@{value}"
+                )
+            raise ParseError(f"Could not extract a channel id from {value!r}.")
+
+        if not segments:
+            raise ParseError(f"Could not extract a channel id from {value!r}.")
+
+        # /channel/UCxxxx
+        if segments[0] == "channel" and len(segments) >= 2:
+            candidate = segments[1]
+            if _CHANNEL_ID_RE.match(candidate):
+                return candidate
+            raise ParseError(f"Could not extract a channel id from {value!r}.")
+
+        # /@handle, /c/name, /user/name
+        if segments[0].startswith("@") or segments[0] in {"c", "user"}:
+            # Rebuild a clean YouTube URL for resolution.
+            path = "/" + "/".join(
+                segments[:2] if segments[0] in {"c", "user"} else segments[:1]
+            )
+            return self._resolve_channel_id_from_url(f"https://www.youtube.com{path}")
+
+        # A path that is itself a handle, e.g. youtube.com/@name already handled;
+        # fall through for anything else.
+        if _CHANNEL_ID_RE.match(segments[-1]):
+            return segments[-1]
+
+        raise ParseError(f"Could not extract a channel id from {value!r}.")
+
+    def _resolve_channel_id_from_url(self, url: str) -> str:
+        """Load a channel page and pull the ``UC…`` id out of the HTML."""
+        html = self._client.get_html(url)
+        match = _CHANNEL_ID_IN_HTML_RE.search(html)
+        if match:
+            return match.group(1)
+        raise ParseError(f"Could not resolve a channel id from {url!r}.")

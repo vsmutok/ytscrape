@@ -5,6 +5,32 @@ All notable changes to **ytscrape** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-08-6
+
+### Added
+
+- 📝 Transcripts / captions via `YouTube.transcript()` and
+  `YouTube.transcripts()`, modeled after youtube-transcript-api:
+  ANDROID InnerTube `player` for caption tracks, timedtext XML download,
+  language priority, manual-vs-ASR preference, optional server-side
+  `translate()`, and CLI `ytscrape transcript`.
+- New types: `Transcript`, `TranscriptSnippet`, `TranscriptTrack`,
+  `TranscriptList`; errors `TranscriptsDisabled`, `NoTranscriptFound`.
+- Example `examples/09_transcript.py`.
+- 🖼️ Richer `ChannelDetails`: `photo` (avatar), `banner`, `country`,
+  `joined_date`, `view_count`, and `links` as a platform→URL dictionary
+  (e.g. `{"x": "…", "instagram": "…", "discord": "…"}`). About-panel fields
+  are loaded via the channel engagement-panel continuation.
+- 📺 Channel metadata with `YouTube.channel(channel)`. Pass a channel id
+  (`UC…`), a `@handle`, or any channel URL (`/channel/…`, `/@handle`, `/c/…`,
+  `/user/…`) and get a typed `ChannelDetails` model (title, description,
+  handle, subscribers, video count, keywords/tags, avatar, vanity + RSS URLs,
+  family-safe flag, available countries, external links).
+- 🔌 New low-level `InnerTubeClient.browse()` / `get_html()` helpers used by
+  channel resolution.
+- 🖥️ New CLI command: `python -m ytscrape channel <id|@handle|url>`.
+- 📚 New example `examples/08_channel_details.py`.
+
 ## [0.1.3] - 2026-08-5
 
 ### Added

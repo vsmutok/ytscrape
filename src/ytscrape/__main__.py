@@ -3,6 +3,7 @@
 Examples:
     python -m ytscrape search "python tutorial" --filter videos --max 10
     python -m ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
+    python -m ytscrape transcript dQw4w9WgXcQ --lang en --lang uk
 """
 
 from __future__ import annotations
@@ -56,6 +57,9 @@ def _build_parser() -> argparse.ArgumentParser:
     video = sub.add_parser("video", help="Fetch details for a single video.")
     video.add_argument("video", help="Video id or URL.")
 
+    channel = sub.add_parser("channel", help="Fetch details for a single channel.")
+    channel.add_argument("channel", help="Channel id, @handle or URL.")
+
     comments = sub.add_parser(
         "comments", help="Collect the comments of a single video."
     )
@@ -83,6 +87,29 @@ def _build_parser() -> argparse.ArgumentParser:
         ),
     )
 
+    transcript = sub.add_parser(
+        "transcript", help="Fetch captions / transcript for a video."
+    )
+    transcript.add_argument("video", help="Video id or URL.")
+    transcript.add_argument(
+        "--lang",
+        action="append",
+        dest="languages",
+        metavar="CODE",
+        help=("Preferred language code (repeatable, tried in order). Default: en."),
+    )
+    transcript.add_argument(
+        "--list",
+        action="store_true",
+        dest="list_only",
+        help="Only list available caption tracks, do not download.",
+    )
+    transcript.add_argument(
+        "--preserve-formatting",
+        action="store_true",
+        help="Keep basic HTML formatting tags in snippet text.",
+    )
+
     return parser
 
 
@@ -108,6 +135,23 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"Views:   {details.views}")
                 print(f"Length:  {details.length_seconds}s")
                 print(f"URL:     {details.url}")
+            elif args.command == "channel":
+                details = yt.channel(args.channel)
+                print(f"Title:        {details.title}")
+                print(f"Handle:       {details.handle}")
+                print(f"Subscribers:  {details.subscribers}")
+                print(f"Videos:       {details.video_count}")
+                print(f"Views:        {details.view_count}")
+                print(f"Country:      {details.country}")
+                print(f"Joined:       {details.joined_date}")
+                print(f"Photo:        {details.photo}")
+                print(f"Banner:       {details.banner}")
+                print(f"Channel id:   {details.channel_id}")
+                print(f"URL:          {details.url}")
+                if details.vanity_url:
+                    print(f"Vanity URL:   {details.vanity_url}")
+                if details.links:
+                    print(f"Links:        {details.links}")
             elif args.command == "comments":
                 max_results = args.max_results or None
                 for comment in yt.comments(
@@ -118,6 +162,26 @@ def main(argv: list[str] | None = None) -> int:
                 ):
                     prefix = "  \u21b3 " if comment.is_reply else ""
                     print(f"{prefix}{comment.author}: {comment.text}")
+            elif args.command == "transcript":
+                if args.list_only:
+                    print(yt.transcripts(args.video))
+                else:
+                    languages = tuple(args.languages) if args.languages else ("en",)
+                    result = yt.transcript(
+                        args.video,
+                        languages=languages,
+                        preserve_formatting=args.preserve_formatting,
+                    )
+                    print(
+                        f"# {result.video_id} | {result.language_code} "
+                        f"| generated={result.is_generated} "
+                        f"| snippets={len(result)}"
+                    )
+                    for snippet in result:
+                        print(
+                            f"[{snippet.start:8.2f} +{snippet.duration:5.2f}] "
+                            f"{snippet.text}"
+                        )
     except YtScraperError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1

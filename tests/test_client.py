@@ -157,6 +157,49 @@ class TestPlayer:
         assert "context" in payload
 
 
+class TestBrowse:
+    def test_browse_payload(self) -> None:
+        session = FakeSession(post_response=FakeResponse(json_data={"b": 1}))
+        client = InnerTubeClient(session=session)
+        result = client.browse("UCxxxxxxxxxxxxxxxxxxxxxx")
+        assert result == {"b": 1}
+        payload = session.post_calls[0]["json"]
+        assert payload["browseId"] == "UCxxxxxxxxxxxxxxxxxxxxxx"
+        assert "continuation" not in payload
+        assert session.post_calls[0]["url"].endswith("browse?key=KEY")
+
+    def test_browse_with_params(self) -> None:
+        session = FakeSession()
+        client = InnerTubeClient(session=session)
+        client.browse("UCxxxxxxxxxxxxxxxxxxxxxx", params="PARAMS")
+        payload = session.post_calls[0]["json"]
+        assert payload["params"] == "PARAMS"
+
+    def test_browse_continuation_payload(self) -> None:
+        session = FakeSession()
+        client = InnerTubeClient(session=session)
+        client.browse("ignored", continuation="TOKEN")
+        payload = session.post_calls[0]["json"]
+        assert payload["continuation"] == "TOKEN"
+        assert "browseId" not in payload
+
+
+class TestGetHtml:
+    def test_get_html_returns_text(self) -> None:
+        session = FakeSession(get_response=FakeResponse(text="<html>channel</html>"))
+        client = InnerTubeClient(session=session)
+        assert client.get_html("https://www.youtube.com/@x") == "<html>channel</html>"
+        assert session.get_calls[-1]["url"] == "https://www.youtube.com/@x"
+
+    def test_get_html_failure_raises_request_error(self) -> None:
+        session = FakeSession(
+            get_response=FakeResponse(raise_exc=requests.RequestException("boom"))
+        )
+        client = InnerTubeClient(session=session)
+        with pytest.raises(RequestError, match="Failed to load"):
+            client.get_html("https://www.youtube.com/@x")
+
+
 class TestNext:
     def test_next_video_id_payload(self) -> None:
         session = FakeSession(post_response=FakeResponse(json_data={"n": 1}))

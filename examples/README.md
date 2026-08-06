@@ -18,6 +18,8 @@ python examples/04_pagination.py
 python examples/05_language_region.py
 python examples/06_error_handling.py
 python examples/07_video_comments.py
+python examples/08_channel_details.py
+python examples/09_transcript.py
 ```
 
 | Example                                | What it shows                                             |
@@ -29,6 +31,8 @@ python examples/07_video_comments.py
 | `05_language_region.py`                | Localise results by interface language and region.        |
 | `06_error_handling.py`                 | Handle `ytscrape` exceptions gracefully.                  |
 | `07_video_comments.py`                 | Collect all comments (and replies) of a video.            |
+| `08_channel_details.py`                | Fetch detailed metadata for a single channel.             |
+| `09_transcript.py`                     | List caption tracks and fetch a video transcript.         |
 
 > These examples hit YouTube's private endpoints and require a network
 > connection. Use the library responsibly.

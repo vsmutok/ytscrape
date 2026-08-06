@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from ytscrape import (
+    ChannelDetails,
     CommentSort,
     ParseError,
     SearchFilter,
@@ -19,11 +20,21 @@ from ytscrape.results import CommentThread, SearchResults
 class FakeClient:
     """A minimal :class:`InnerTubeClient` stand-in for facade tests."""
 
-    def __init__(self, *, comments_token: str | None = "CT") -> None:
+    def __init__(
+        self,
+        *,
+        comments_token: str | None = "CT",
+        html: str = "",
+        browse_response: dict[str, Any] | None = None,
+    ) -> None:
         self.search_calls: list[dict[str, Any]] = []
         self.player_calls: list[str] = []
+        self.browse_calls: list[dict[str, Any]] = []
+        self.get_html_calls: list[str] = []
         self.next_calls: list[dict[str, Any]] = []
         self._comments_token = comments_token
+        self._html = html
+        self._browse_response = browse_response
         self.closed = False
 
     def search(
@@ -38,9 +49,38 @@ class FakeClient:
         )
         return {"contents": [{"videoRenderer": {"videoId": "vid1"}}]}
 
-    def player(self, video_id: str) -> dict[str, Any]:
+    def player(self, video_id: str, *, client_name: str = "WEB") -> dict[str, Any]:
         self.player_calls.append(video_id)
         return {"videoDetails": {"videoId": video_id, "title": "T"}}
+
+    def browse(
+        self,
+        browse_id: str,
+        *,
+        params: str | None = None,
+        continuation: str | None = None,
+    ) -> dict[str, Any]:
+        self.browse_calls.append(
+            {
+                "browse_id": browse_id,
+                "params": params,
+                "continuation": continuation,
+            }
+        )
+        if self._browse_response is not None:
+            return self._browse_response
+        return {
+            "metadata": {
+                "channelMetadataRenderer": {
+                    "title": "Channel",
+                    "externalId": browse_id,
+                }
+            }
+        }
+
+    def get_html(self, url: str) -> str:
+        self.get_html_calls.append(url)
+        return self._html
 
     def next(
         self,
@@ -172,6 +212,69 @@ class TestYouTubeVideo:
         yt = YouTube(client=client)
         yt.video("https://youtu.be/dQw4w9WgXcQ")
         assert client.player_calls == ["dQw4w9WgXcQ"]
+
+
+class TestNormalizeChannelId:
+    def test_plain_channel_id(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        assert YouTube(client=FakeClient())._normalize_channel_id(channel_id) == (
+            channel_id
+        )
+
+    def test_channel_url(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        url = f"https://www.youtube.com/channel/{channel_id}"
+        assert YouTube(client=FakeClient())._normalize_channel_id(url) == channel_id
+
+    def test_handle_resolves_via_html(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        client = FakeClient(html=f'{{"externalId":"{channel_id}"}}')
+        yt = YouTube(client=client)
+        assert yt._normalize_channel_id("@RickAstleyYT") == channel_id
+        assert client.get_html_calls == ["https://www.youtube.com/@RickAstleyYT"]
+
+    def test_handle_url_resolves_via_html(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        client = FakeClient(html=f'{{"browseId":"{channel_id}"}}')
+        yt = YouTube(client=client)
+        assert (
+            yt._normalize_channel_id("https://www.youtube.com/@RickAstleyYT")
+            == channel_id
+        )
+
+    def test_invalid_raises_parse_error(self) -> None:
+        with pytest.raises(ParseError, match="Could not extract a channel id"):
+            YouTube(client=FakeClient())._normalize_channel_id(
+                "https://example.com/nope"
+            )
+
+
+class TestYouTubeChannel:
+    def test_channel_returns_details(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        client = FakeClient()
+        yt = YouTube(client=client)
+        details = yt.channel(channel_id)
+        assert isinstance(details, ChannelDetails)
+        assert details.channel_id == channel_id
+        assert client.browse_calls == [
+            {"browse_id": channel_id, "params": None, "continuation": None}
+        ]
+
+    def test_channel_accepts_handle(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        client = FakeClient(html=f'{{"externalId":"{channel_id}"}}')
+        yt = YouTube(client=client)
+        details = yt.channel("@RickAstleyYT")
+        assert details.channel_id == channel_id
+        assert client.browse_calls[0]["browse_id"] == channel_id
+
+    def test_channel_missing_metadata_raises(self) -> None:
+        channel_id = "UCuAXFkgsw1L7xaCfnd5JJOw"
+        client = FakeClient(browse_response={})
+        yt = YouTube(client=client)
+        with pytest.raises(ParseError, match="Could not parse channel metadata"):
+            yt.channel(channel_id)
 
 
 class TestYouTubeComments:

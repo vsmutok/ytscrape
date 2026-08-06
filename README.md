@@ -43,6 +43,7 @@ with YouTube() as yt:
 - [How it works](#how-it-works)
 - [Search](#search)
 - [Video details](#video-details)
+- [Channel details](#channel-details)
 - [Comments](#comments)
 - [Language & country](#language--country)
 - [Pagination](#pagination)
@@ -61,7 +62,7 @@ with YouTube() as yt:
 - 🔑 **No YouTube Data API key**, **no quota**, no sign-up, no billing project.
 - 🧊 **No browser** — no Selenium, no Playwright, no headless Chrome. Pure HTTP.
 - 🧩 **Typed models** (`Video`, `Channel`, `Playlist`, `VideoDetails`,
-  `Comment`) instead of raw, deeply-nested JSON.
+  `ChannelDetails`, `Comment`) instead of raw, deeply-nested JSON.
 - 📄 **Transparent pagination** — just iterate; continuation tokens are handled
   for you.
 - 💬 **Full comment scraping**, including replies and the sort order that
@@ -135,16 +136,17 @@ with YouTube(language="en", region="US") as yt:
 | Search — playlists                          |   ✅   | `SearchFilter.PLAYLISTS`                         |
 | Search — Shorts / movies                    |   ✅   | `SearchFilter.SHORTS`, `SearchFilter.MOVIES`     |
 | Video metadata                              |   ✅   | `YouTube.video()` (id or any URL)                |
+| Channel metadata                            |   ✅   | `YouTube.channel()` (id, `@handle` or URL)       |
 | Comments                                    |   ✅   | `YouTube.comments()`, full pagination            |
 | Comment replies                             |   ✅   | `include_replies=True`                           |
 | Comment sort (top / newest)                 |   ✅   | `sort=CommentSort.NEWEST` returns *every* comment |
 | Continuation / pagination                   |   ✅   | Transparent for search and comments              |
+| Transcripts / subtitles                     |   ✅   | `YouTube.transcript()` / `transcripts()`         |
 | Localisation (`hl` / `gl`)                  |   ✅   | Validated ISO codes                              |
 | Typed models + `py.typed`                   |   ✅   | PEP 561 compliant                                |
 | CLI                                         |   ✅   | `python -m ytscrape` / `ytscrape`                |
 | Channel videos / Shorts / live tabs         |   🚧   | Planned — see [Roadmap](#roadmap)                |
 | Playlist items                              |   🚧   | Planned                                          |
-| Transcripts / subtitles                     |   🚧   | Planned                                          |
 | Related videos, trending, home feed         |   🚧   | Planned                                          |
 | Community posts                             |   🚧   | Planned                                          |
 | Async (`asyncio`) API                       |   🚧   | Planned                                          |
@@ -173,8 +175,8 @@ need **fast, key-less access to YouTube metadata and comments** from Python.
 
 1. It loads `youtube.com` once and extracts the InnerTube **context**
    (API key, client version, visitor data).
-2. It POSTs to `youtubei/v1/search`, `youtubei/v1/player` and
-   `youtubei/v1/next` with that context.
+2. It POSTs to `youtubei/v1/search`, `youtubei/v1/player`,
+   `youtubei/v1/browse` and `youtubei/v1/next` with that context.
 3. Responses are parsed into small, frozen dataclasses; **continuation tokens**
    are followed automatically while you iterate.
 
@@ -214,6 +216,35 @@ with YouTube() as yt:
 ```
 
 `watch?v=`, `youtu.be/`, `/shorts/` and `/embed/` URLs are all accepted.
+
+## Channel details
+
+```python
+with YouTube() as yt:
+    channel = yt.channel("UCuAXFkgsw1L7xaCfnd5JJOw")  # id
+    channel = yt.channel("@RickAstleyYT")  # handle
+    channel = yt.channel("https://www.youtube.com/@RickAstleyYT")  # or any URL
+
+    print(channel.title, channel.subscribers, channel.video_count)
+    print(channel.country, channel.joined_date, channel.view_count)
+    print(channel.photo, channel.banner)
+    print(channel.links)  # e.g. {"x": "https://twitter.com/…", "instagram": "…"}
+    print(channel.handle, channel.keywords[:5])
+    print(channel.url, channel.vanity_url, channel.rss_url)
+
+# Transcripts / captions (manual preferred over auto-generated).
+transcript = yt.transcript("dQw4w9WgXcQ", languages=["uk", "en"])
+print(transcript.language_code, transcript.is_generated, len(transcript))
+for line in transcript[:3]:
+    print(f"{line.start:.1f}s  {line.text}")
+
+# Or inspect tracks first:
+for track in yt.transcripts("dQw4w9WgXcQ"):
+    print(track.language_code, track.is_generated, track.is_translatable)
+```
+
+`/channel/UC…`, `/@handle`, `/c/…` and `/user/…` URLs are all accepted. Handles
+are resolved to a `UC…` id automatically.
 
 ## Comments
 
@@ -345,6 +376,12 @@ All models are frozen dataclasses with full type hints (the package ships
 `description`, `channel`, `channel_id`, `length_seconds` (`int`), `views`
 (`int`), `keywords`, `is_live`, `thumbnail`, `url`.
 
+**`ChannelDetails`** (from `YouTube.channel()`) — `channel_id`, `title`,
+`description`, `handle`, `subscribers`, `video_count`, `view_count`, `keywords`,
+`tags`, `thumbnail` / `photo` (avatar), `banner`, `vanity_url`, `rss_url`,
+`is_family_safe`, `available_countries`, `country`, `joined_date`,
+`links` (`dict` like `{"x": "…", "instagram": "…"}`), `url`.
+
 **`Comment`**:
 
 | Field                | Description                                            |
@@ -424,6 +461,11 @@ python -m ytscrape --language uk --region UA search "музика" --max 10
 # Video details
 python -m ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
 
+# Channel details
+python -m ytscrape channel @RickAstleyYT
+python -m ytscrape transcript dQw4w9WgXcQ --lang en
+python -m ytscrape transcript dQw4w9WgXcQ --list
+
 # Collect comments (pass 0 to --max for no limit)
 python -m ytscrape comments https://www.youtube.com/watch?v=dQw4w9WgXcQ --max 20
 
@@ -451,6 +493,8 @@ ytscrape search "python" --filter channels --max 5
 | [`05_language_region.py`](examples/05_language_region.py)             | Localise results by language and region.                |
 | [`06_error_handling.py`](examples/06_error_handling.py)               | Handle `ytscrape` exceptions gracefully.                |
 | [`07_video_comments.py`](examples/07_video_comments.py)               | Collect all comments (and replies) of a video.          |
+| [`08_channel_details.py`](examples/08_channel_details.py)             | Fetch detailed metadata for a single channel.           |
+| [`09_transcript.py`](examples/09_transcript.py)                       | List caption tracks and fetch a transcript.             |
 
 ## FAQ
 
@@ -518,7 +562,6 @@ synchronous client in a thread pool (`asyncio.to_thread`).
 - ⚡ **Async API** (`asyncio` / `httpx`) alongside the synchronous one.
 - 📺 **Channel tabs**: videos, Shorts, live, playlists, about.
 - 🎵 **Playlist items** with transparent pagination.
-- 📝 **Transcripts / subtitles**.
 - 🔗 **Related videos**, **trending** and **home feed**.
 - 🗒️ **Community posts**.
 - 📚 A dedicated documentation site with an API reference.

@@ -100,10 +100,22 @@ class InnerTubeClient:
         return self._extractor.extract(response.text)
 
     def _client_context(self) -> dict[str, Any]:
+        return self._client_context_for("WEB")
+
+    def _client_context_for(self, client_name: str) -> dict[str, Any]:
+        """Build an InnerTube ``context`` block for the given client identity."""
+        name = (client_name or "WEB").upper()
+        if name == "ANDROID":
+            # Stable public Android client used by youtube-transcript-api.
+            # Caption tracks are more reliably exposed here than on WEB.
+            version = "20.10.38"
+        else:
+            name = "WEB"
+            version = self.context.client_version
         return {
             "client": {
-                "clientName": "WEB",
-                "clientVersion": self.context.client_version,
+                "clientName": name,
+                "clientVersion": version,
                 "hl": self._locale.language.code,
                 "gl": self._locale.country.code,
             }
@@ -149,10 +161,75 @@ class InnerTubeClient:
                 payload["params"] = params
         return self._post("search", payload)
 
-    def player(self, video_id: str) -> dict[str, Any]:
-        """Call the ``player`` endpoint for a single video."""
-        payload = {"context": self._client_context(), "videoId": video_id}
+    def player(
+        self,
+        video_id: str,
+        *,
+        client_name: str = "WEB",
+    ) -> dict[str, Any]:
+        """Call the ``player`` endpoint for a single video.
+
+        Args:
+            video_id: 11-char YouTube video id.
+            client_name: InnerTube client identity. ``WEB`` is used for normal
+                metadata; ``ANDROID`` is preferred for caption track lists
+                (same approach as youtube-transcript-api).
+        """
+        payload = {
+            "context": self._client_context_for(client_name),
+            "videoId": video_id,
+        }
         return self._post("player", payload)
+
+    def get_text(self, url: str) -> str:
+        """GET an arbitrary URL and return the response body as text.
+
+        Used for timedtext / caption XML downloads.
+        """
+        try:
+            response = self._session.get(
+                url,
+                headers=self._base_headers(),
+                timeout=self._timeout,
+            )
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            raise RequestError(f"Failed to load {url!r}: {exc}") from exc
+
+    def browse(
+        self,
+        browse_id: str,
+        *,
+        params: str | None = None,
+        continuation: str | None = None,
+    ) -> dict[str, Any]:
+        """Call the ``browse`` endpoint (channels, tabs, shelves, …).
+
+        Either ``browse_id`` (first page of a channel / tab) or
+        ``continuation`` (subsequent pages) must be provided.
+        """
+        payload: dict[str, Any] = {"context": self._client_context()}
+        if continuation is not None:
+            payload["continuation"] = continuation
+        else:
+            payload["browseId"] = browse_id
+            if params is not None:
+                payload["params"] = params
+        return self._post("browse", payload)
+
+    def get_html(self, url: str) -> str:
+        """GET an arbitrary YouTube page and return its HTML body."""
+        try:
+            response = self._session.get(
+                url,
+                headers=self._base_headers(),
+                timeout=self._timeout,
+            )
+            response.raise_for_status()
+            return response.text
+        except requests.RequestException as exc:
+            raise RequestError(f"Failed to load {url!r}: {exc}") from exc
 
     def next(
         self,
