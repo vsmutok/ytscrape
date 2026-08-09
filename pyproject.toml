@@ -59,7 +59,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/vsmutok/ytscrape"
 Repository = "https://github.com/vsmutok/ytscrape"
-Documentation = "https://github.com/vsmutok/ytscrape#readme"
+Documentation = "https://vsmutok.github.io/ytscrape/"
 Issues = "https://github.com/vsmutok/ytscrape/issues"
 
 [project.scripts]
@@ -104,6 +104,7 @@ addopts = "-ra"
 [dependency-groups]
 dev = [
     "bandit[toml]>=1.9.4",
+    "mkdocs-material>=9.7.7",
     "pre-commit>=4.3.0",
     "pytest>=9.1.1",
     "ruff>=0.14.5",

@@ -25,6 +25,9 @@ uv.lock
 .ruff_cache/
 .cache/
 
+# MkDocs
+site/
+
 # IDE
 .idea/
 *.iml
