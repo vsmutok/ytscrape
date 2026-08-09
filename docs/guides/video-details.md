@@ -80,4 +80,3 @@ with YouTube() as yt:
 !!! note
 
     `length_seconds` is an `int` (e.g. `212`), not a formatted string like `"3:32"`. To display a human-readable duration, convert it yourself: `f"{details.length_seconds // 60}:{details.length_seconds % 60:02d}"`.
-

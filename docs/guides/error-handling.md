@@ -108,4 +108,3 @@ with YouTube() as yt:
 !!! tip
 
     Catching `YtScraperError` at the outermost level is the simplest guard when you don't need to distinguish the failure mode — for example in a CLI tool or a background worker that just logs the error and moves on.
-

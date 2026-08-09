@@ -126,4 +126,3 @@ yt = YouTube(client=client)
 !!! warning
 
     `requests.Session` is **not thread-safe**. If you run ytscrape from multiple threads, create a separate `YouTube` (and therefore a separate session) per thread rather than sharing one instance.
-

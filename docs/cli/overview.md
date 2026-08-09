@@ -197,4 +197,3 @@ ytscrape transcript dQw4w9WgXcQ --lang en --preserve-formatting
 !!! tip
 
     Run `--list` first to discover which language codes are available for a video before fetching. Auto-generated tracks are clearly identified in the listing so you can choose between a human-edited caption and a machine-generated one.
-

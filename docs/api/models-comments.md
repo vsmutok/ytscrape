@@ -132,4 +132,3 @@ page2 = thread.fetch_next_page() if thread.has_more else []
 !!! note
 
     `like_count` is `None` whenever YouTube returns an abbreviated value like `"1.2K"` because abbreviations cannot be represented as an exact integer. In those cases `like_count_text` still holds the display string. If you need to display a like count unconditionally, always prefer `like_count_text`; use `like_count` only when you need arithmetic.
-

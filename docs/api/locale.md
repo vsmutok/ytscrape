@@ -27,9 +27,9 @@ The `locale` module provides three immutable value objects — `Language`, `Coun
 **`of(value)`** (`classmethod`)
 
 :   Coerces a raw ISO 639-1 string or an existing `Language` instance into a `Language`. Returns the instance unchanged if it is already a `Language`.
-    
+
       **`value`** (`Language | str`) **required**
-    
+
     :   The language to coerce.
 
 
@@ -77,9 +77,9 @@ Language("xx")
 **`of(value)`** (`classmethod`)
 
 :   Coerces a raw ISO 3166-1 alpha-2 string or an existing `Country` instance into a `Country`. Returns the instance unchanged if it is already a `Country`.
-    
+
       **`value`** (`Country | str`) **required**
-    
+
     :   The country to coerce.
 
 
@@ -142,14 +142,14 @@ Country("ZZ")
 **`of(language, country)`** (`classmethod`)
 
 :   Builds a `Locale` from optional language and country arguments, falling back to defaults (`"en"` / `"US"`) for any argument that is `None`. Each argument is coerced via `Language.of` or `Country.of`.
-    
+
       **`language`** (`Language | str | None`)
-    
+
     :   The interface language, or `None` to use the default `"en"`.
-    
-    
+
+
       **`country`** (`Country | str | None`)
-    
+
     :   The content region, or `None` to use the default `"US"`.
 
 

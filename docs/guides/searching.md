@@ -151,4 +151,3 @@ Each yielded item is a frozen, fully typed dataclass. The concrete type depends 
 !!! tip
 
     Create one `YouTube` instance and reuse it across multiple searches. The instance holds a warm HTTP session and a cached InnerTube context, so subsequent calls skip the initial context-extraction request and run noticeably faster.
-

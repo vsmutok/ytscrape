@@ -88,4 +88,3 @@ with YouTube() as yt:
 !!! tip
 
     Create one `YouTube` instance and reuse it across multiple paginated calls. The instance maintains a warm HTTP session and a cached InnerTube context, avoiding the extra round-trip needed to extract those details on every new `YouTube()` construction.
-

@@ -109,4 +109,3 @@ If a channel has no external links, `links` is an empty dictionary.
 !!! note
 
     Inputs that use a handle or a `/c/`/`/user/` vanity path require an extra HTTP request to resolve the `UC…` channel id before the metadata request can be made. Passing the raw `UC…` id directly skips this lookup and is marginally faster.
-

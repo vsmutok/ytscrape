@@ -158,10 +158,10 @@ for item in results:
 **`fetch_next_page()`** (`list[Video | Channel | Playlist]`)
 
 :   Explicitly fetches the next page of results, appends them to the internal buffer, and returns the newly added items as a list. Returns an empty list when there are no more pages. Use this when you want fine-grained control over network calls instead of relying on the implicit iterator.
-    
+
       ```python
       results = yt.search("guitar lessons")
-    
+
       # Fetch page 2 manually
       page2 = results.fetch_next_page()
       for item in page2:
@@ -200,4 +200,3 @@ top20 = list(yt.search("synthwave", max_results=20))
 !!! tip
 
     `max_results` limits the number of items **yielded by the iterator**, not the number of items fetched per page. YouTube returns roughly 20 results per page, so a `max_results` of 10 still fetches the first full page but stops yielding after 10 items.
-

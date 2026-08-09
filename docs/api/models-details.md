@@ -214,4 +214,3 @@ for platform, link_url in channel.links.items():
 !!! note
 
     `ChannelDetails.thumbnail` and `ChannelDetails.photo` always contain the same URL. The `photo` alias exists for readability — use whichever feels more natural for the context (e.g. `channel.photo` in a UI context, `channel.thumbnail` when treating channels uniformly with videos).
-

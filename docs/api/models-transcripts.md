@@ -76,7 +76,7 @@ A fully fetched and parsed transcript for a single video. Returned by `Transcrip
 **`to_raw_data()`** (`list[dict[str, Any]]`)
 
 :   Returns a list of plain `{"text": ..., "start": ..., "duration": ...}` dictionaries, one per snippet. Useful for serialisation or passing data to code that does not import ytscrape types.
-    
+
       ```python
       import json
       print(json.dumps(transcript.to_raw_data()[:3], indent=2))
@@ -126,18 +126,18 @@ Metadata for one available caption track. Instances are collected inside a `Tran
 **`fetch(*, preserve_formatting=False)`** (`Transcript`)
 
 :   Downloads the timedtext XML for this track, parses it into `TranscriptSnippet` instances, and returns a `Transcript` object.
-    
+
       * `preserve_formatting` — when `True`, semantic HTML tags (`<b>`, `<i>`, `<em>`, `<strong>`, etc.) are preserved in snippet text instead of being stripped. All other tags are still removed.
-    
+
       Raises `ParseError` if the transcript XML cannot be parsed or if YouTube requires a PO token for this track.
 
 
 **`translate(language_code)`** (`TranscriptTrack`)
 
 :   Returns a new `TranscriptTrack` that, when fetched, will request a server-side translation into the given language. The returned track has `is_generated=True`.
-    
+
       Raises `ParseError` if this track is not translatable, or `NoTranscriptFound` if `language_code` is not in `translation_languages`.
-    
+
       ```python
       spanish_track = track.translate("es")
       spanish_transcript = spanish_track.fetch()
@@ -171,11 +171,11 @@ The collection of all available caption tracks for a video. Returned by `YouTube
 **`find_transcript(language_codes)`** (`TranscriptTrack`)
 
 :   Finds the best available track for the given language priority list. Manually created tracks are preferred over generated (ASR) tracks. The first matching language code wins.
-    
+
       ```python
       track = transcript_list.find_transcript(["en", "fr", "de"])
       ```
-    
+
       Raises `NoTranscriptFound` if none of the requested languages are available.
 
 
@@ -270,4 +270,3 @@ if track.is_translatable:
 !!! warning
 
     Some tracks require a PO token (indicated by `&exp=xpe` in their internal URL). Calling `fetch()` on such a track raises a `ParseError` with an explanatory message. This is a YouTube bot-check restriction and cannot be circumvented without a valid token.
-

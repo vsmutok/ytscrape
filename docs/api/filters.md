@@ -31,9 +31,9 @@ The `filters` module provides two enumerations that let you express search and c
 **`from_value(value)`** (`classmethod`)
 
 :   Coerces a plain string or an existing `SearchFilter` instance into a `SearchFilter`. The string is matched case-insensitively. Raises `ValueError` listing all valid filter names if the value is not recognised.
-    
+
       **`value`** (`SearchFilter | str`) **required**
-    
+
     :   The filter to coerce. Pass a `SearchFilter` member to return it unchanged, or a lowercase string such as `"videos"`.
 
 
@@ -91,9 +91,9 @@ results = yt.search("python tutorial", filter=ytscrape.SearchFilter.ALL)
 **`from_value(value)`** (`classmethod`)
 
 :   Coerces a plain string or an existing `CommentSort` instance into a `CommentSort`. The string is matched case-insensitively. Raises `ValueError` listing valid values if unrecognised.
-    
+
       **`value`** (`CommentSort | str`) **required**
-    
+
     :   The sort order to coerce. Pass a `CommentSort` member to return it unchanged, or a string such as `"newest"`.
 
 
