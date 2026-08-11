@@ -8,6 +8,7 @@ quota, no browser.**
 [![Downloads](https://img.shields.io/pepy/dt/ytscrape)](https://pepy.tech/project/ytscrape)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Typed](https://img.shields.io/badge/typed-PEP%20561-blue.svg)](https://peps.python.org/pep-0561/)
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://vsmutok.github.io/ytscrape/)
 [![API key](https://img.shields.io/badge/API%20key-not%20required-success)](#ytscrape-vs-the-alternatives)
 
 [![CI](https://img.shields.io/github/actions/workflow/status/vsmutok/ytscrape/pre-commit.yml?branch=main&label=ci)](https://github.com/vsmutok/ytscrape/actions/workflows/pre-commit.yml)
@@ -572,6 +573,8 @@ Ideas and votes are welcome in
 ## Contributing
 
 Contributions are very welcome — bug reports, ideas and pull requests alike.
+See **[CONTRIBUTING.md](CONTRIBUTING.md)** for setup, style and PR guidelines.
+Issue and pull request templates live under `.github/`.
 
 ```bash
 git clone https://github.com/vsmutok/ytscrape

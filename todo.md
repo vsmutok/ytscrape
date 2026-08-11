@@ -17,9 +17,9 @@ priority. `[x]` — done, `[ ]` — not yet, 🔥 — blocks the release.
 
 ## Quick wins
 
-- [ ] Remove or repurpose the root `main.py`
-- [ ] Add `CONTRIBUTING.md` and link it from the README
-- [ ] Add issue/PR templates in `.github/`
+- [x] Remove or repurpose the root `main.py`
+- [x] Add `CONTRIBUTING.md` and link it from the README
+- [x] Add issue/PR templates in `.github/`
 
 ## InnerTube coverage
 

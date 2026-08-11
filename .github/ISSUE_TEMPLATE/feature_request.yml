@@ -1,0 +1,39 @@
+name: Feature request
+description: Propose an API, CLI, or coverage improvement
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the problem first; a concrete API sketch is optional but appreciated.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What are you trying to do that is hard or impossible today?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: Ideal API, CLI flag, or behaviour.
+      placeholder: |
+        e.g. YouTube.playlist(playlist_id) -> iterable of Video
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds, other libraries, or simpler scopes.
+    validations:
+      required: false
+  - type: textarea
+    id: extra
+    attributes:
+      label: Additional context
+      description: Links to related issues, InnerTube endpoints, or examples.
+    validations:
+      required: false
