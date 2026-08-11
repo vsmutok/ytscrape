@@ -48,7 +48,7 @@ from .results import CommentThread, SearchResults
 from .transcripts import Transcript, TranscriptList, TranscriptSnippet, TranscriptTrack
 from .youtube import YouTube
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 
 __all__ = [
     "YouTube",
