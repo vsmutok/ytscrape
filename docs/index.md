@@ -35,6 +35,11 @@ ytscrape is a free, open-source Python library that lets you search YouTube, ext
 
     List available caption tracks with `yt.transcripts()` and download a preferred one with `yt.transcript()`. Manual captions are automatically preferred over auto-generated ones.
 
+
+!!! abstract "Async API (optional)"
+
+    Install `ytscrape[async]` for `AsyncYouTube` — the same public surface as `YouTube`, backed by httpx, with concurrency limits and exponential backoff. Ideal when scraping many videos in parallel.
+
 ## How ytscrape Compares
 
 |                         | **ytscrape** | YouTube Data API | `yt-dlp` | Browser automation |
@@ -46,6 +51,7 @@ ytscrape is a free, open-source Python library that lets you search YouTube, ext
 | Video metadata          |       ✅      |         ✅        |     ✅    |          ✅         |
 | Comments + replies      |       ✅      |     ✅ (quota)    |     ✅    |          ✅         |
 | Typed Python models     |       ✅      |         ❌        |     ❌    |          ❌         |
+| Async (`asyncio`) API   |       ✅      |         ❌        |     ❌    |        varies      |
 | Downloads media         |       ❌      |         ❌        |     ✅    |          ✅         |
 | Install size            |     tiny     |      medium      |   large  |        huge        |
 
@@ -70,4 +76,4 @@ ytscrape speaks YouTube's private *InnerTube* API directly, with no browser in t
 
 ## Next Steps
 
-Ready to make your first request? Head to the [Quickstart](quickstart.md) to install ytscrape and run your first search in under five minutes.
+Ready to make your first request? Head to the [Quickstart](quickstart.md) to install ytscrape and run your first search in under five minutes. Prefer copy-paste scripts? See [Examples](examples.md) (every feature has sync + async). For concurrent scraping, read the [Async API guide](guides/async.md).

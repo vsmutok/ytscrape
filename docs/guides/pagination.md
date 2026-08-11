@@ -85,6 +85,25 @@ with YouTube() as yt:
     print(f"Total: {len(all_results)} videos")
 ```
 
+## Async pagination
+
+With [`AsyncYouTube`](async.md) the same ideas apply, using `await` and `async for`:
+
+```python
+from ytscrape import AsyncYouTube
+
+async with AsyncYouTube() as yt:
+    results = await yt.search("python", max_results=15)
+    async for item in results:
+        print(item.title)
+
+    thread = await yt.comments("dQw4w9WgXcQ", max_results=50)
+    page = await thread.fetch_next_page()
+    print(len(page), thread.has_more)
+```
+
+Pages of a **single** result stream still load sequentially (continuation tokens). To speed up overall wall time, run **multiple** independent searches or comment jobs concurrently with `asyncio.gather` under one `AsyncYouTube` / `max_concurrency` budget — see [Async API](async.md).
+
 !!! tip
 
-    Create one `YouTube` instance and reuse it across multiple paginated calls. The instance maintains a warm HTTP session and a cached InnerTube context, avoiding the extra round-trip needed to extract those details on every new `YouTube()` construction.
+    Create one `YouTube` or `AsyncYouTube` instance and reuse it across multiple paginated calls. The instance maintains a warm HTTP session and a cached InnerTube context, avoiding the extra round-trip needed to extract those details on every new construction.

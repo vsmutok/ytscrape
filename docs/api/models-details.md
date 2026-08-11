@@ -181,14 +181,14 @@ yt = YouTube()
 # --- VideoDetails ---
 video = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-print(video.title)           # "Rick Astley - Never Gonna Give You Up (Official Music Video)"
-print(video.channel)         # "Rick Astley"
-print(video.channel_id)      # "UCuAXFkgsw1L7xaCfnd5JJOw"
-print(video.views)           # 1458723912  (integer)
+print(video.title)  # "Rick Astley - Never Gonna Give You Up (Official Music Video)"
+print(video.channel)  # "Rick Astley"
+print(video.channel_id)  # "UCuAXFkgsw1L7xaCfnd5JJOw"
+print(video.views)  # 1458723912  (integer)
 print(video.length_seconds)  # 212
-print(video.is_live)         # False
-print(video.keywords[:3])    # ('Rick Astley', 'Never Gonna Give You Up', 'pop')
-print(video.url)             # "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+print(video.is_live)  # False
+print(video.keywords[:3])  # ('Rick Astley', 'Never Gonna Give You Up', 'pop')
+print(video.url)  # "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
 
 # Convert duration to minutes:seconds
 mins, secs = divmod(video.length_seconds, 60)
@@ -197,12 +197,12 @@ print(f"{mins}:{secs:02d}")  # "3:32"
 # --- ChannelDetails ---
 channel = yt.channel("@RickAstleyYT")
 
-print(channel.title)        # "Rick Astley"
-print(channel.handle)       # "@RickAstleyYT"
+print(channel.title)  # "Rick Astley"
+print(channel.handle)  # "@RickAstleyYT"
 print(channel.subscribers)  # "4.36M subscribers"
 print(channel.joined_date)  # "Joined Oct 24, 2013"
-print(channel.country)      # "United Kingdom"
-print(channel.banner)       # "https://yt3.googleusercontent.com/…"
+print(channel.country)  # "United Kingdom"
+print(channel.banner)  # "https://yt3.googleusercontent.com/…"
 
 # Iterate external links
 for platform, link_url in channel.links.items():

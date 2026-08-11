@@ -144,6 +144,31 @@ Auto-generated transcripts sometimes include inline HTML tags (`<i>`, `<b>`, etc
 transcript = yt.transcript(video_id, languages=["en"], preserve_formatting=True)
 ```
 
+## Async transcripts
+
+With `AsyncYouTube` (requires `pip install "ytscrape[async]"`):
+
+```python
+import asyncio
+from ytscrape import AsyncYouTube
+
+
+async def main() -> None:
+    async with AsyncYouTube() as yt:
+        transcript = await yt.transcript("dQw4w9WgXcQ", languages=["en"])
+        print(transcript.text[:200])
+
+        tracks = await yt.transcripts("dQw4w9WgXcQ")
+        track = tracks.find_transcript(["en"])
+        # Async download of a specific track:
+        data = await track.afetch()
+
+
+asyncio.run(main())
+```
+
+Prefer `await yt.transcript(...)` or `await track.afetch()` in async code. Sync `track.fetch()` is for the `YouTube` / requests path. Details: [Async API](async.md).
+
 ## Exceptions
 
 | Exception             | Raised when                                                                                                                                                             |

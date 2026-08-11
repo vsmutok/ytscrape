@@ -17,7 +17,7 @@ from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
 from html import unescape
 from itertools import chain
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from defusedxml import ElementTree
 from defusedxml.ElementTree import ParseError as XMLParseError
@@ -27,10 +27,8 @@ from .exceptions import (
     ParseError,
     TranscriptsDisabled,
     YtScraperError,
+    with_block_mitigation,
 )
-
-if TYPE_CHECKING:
-    from .client import InnerTubeClient
 
 __all__ = [
     "TranscriptSnippet",
@@ -39,6 +37,8 @@ __all__ = [
     "TranscriptList",
     "fetch_transcript",
     "list_transcripts",
+    "async_fetch_transcript",
+    "async_list_transcripts",
 ]
 
 _FORMATTING_TAGS = (
@@ -113,7 +113,7 @@ class TranscriptTrack:
     is_generated: bool
     _url: str
     _translation_languages: tuple[_TranslationLanguage, ...] = ()
-    _client: InnerTubeClient | None = None
+    _client: Any | None = None
 
     @property
     def is_translatable(self) -> bool:
@@ -131,15 +131,36 @@ class TranscriptTrack:
         )
 
     def fetch(self, *, preserve_formatting: bool = False) -> Transcript:
-        """Download and parse this track's timedtext XML."""
+        """Download and parse this track's timedtext XML (sync client)."""
         if self._client is None:
             raise YtScraperError("TranscriptTrack has no HTTP client bound.")
         if "&exp=xpe" in self._url:
             raise ParseError(
-                f"Transcript for {self.video_id!r} requires a PO token "
-                "(YouTube bot-check / exp=xpe)."
+                with_block_mitigation(
+                    f"Transcript for {self.video_id!r} requires a PO token "
+                    "(YouTube bot-check / exp=xpe)"
+                )
             )
         raw = self._client.get_text(self._url)
+        return self._transcript_from_xml(raw, preserve_formatting=preserve_formatting)
+
+    async def afetch(self, *, preserve_formatting: bool = False) -> Transcript:
+        """Download and parse this track's timedtext XML (async client)."""
+        if self._client is None:
+            raise YtScraperError("TranscriptTrack has no HTTP client bound.")
+        if "&exp=xpe" in self._url:
+            raise ParseError(
+                with_block_mitigation(
+                    f"Transcript for {self.video_id!r} requires a PO token "
+                    "(YouTube bot-check / exp=xpe)"
+                )
+            )
+        raw = await self._client.get_text(self._url)
+        return self._transcript_from_xml(raw, preserve_formatting=preserve_formatting)
+
+    def _transcript_from_xml(
+        self, raw: str, *, preserve_formatting: bool
+    ) -> Transcript:
         snippets = _parse_timedtext(raw, preserve_formatting=preserve_formatting)
         return Transcript(
             snippets=tuple(snippets),
@@ -253,7 +274,7 @@ class TranscriptList:
         raise NoTranscriptFound(self.video_id, codes, available=available)
 
 
-def list_transcripts(client: InnerTubeClient, video_id: str) -> TranscriptList:
+def list_transcripts(client: Any, video_id: str) -> TranscriptList:
     """Build a :class:`TranscriptList` from the InnerTube player response."""
     data = client.player(video_id, client_name="ANDROID")
     captions = _extract_captions_json(data, video_id)
@@ -261,7 +282,7 @@ def list_transcripts(client: InnerTubeClient, video_id: str) -> TranscriptList:
 
 
 def fetch_transcript(
-    client: InnerTubeClient,
+    client: Any,
     video_id: str,
     *,
     languages: Iterable[str] = ("en",),
@@ -273,6 +294,25 @@ def fetch_transcript(
         .find_transcript(languages)
         .fetch(preserve_formatting=preserve_formatting)
     )
+
+
+async def async_list_transcripts(client: Any, video_id: str) -> TranscriptList:
+    """Async variant of :func:`list_transcripts`."""
+    data = await client.player(video_id, client_name="ANDROID")
+    captions = _extract_captions_json(data, video_id)
+    return _build_transcript_list(client, video_id, captions)
+
+
+async def async_fetch_transcript(
+    client: Any,
+    video_id: str,
+    *,
+    languages: Iterable[str] = ("en",),
+    preserve_formatting: bool = False,
+) -> Transcript:
+    """Async shortcut: list tracks → pick language → download XML."""
+    track = (await async_list_transcripts(client, video_id)).find_transcript(languages)
+    return await track.afetch(preserve_formatting=preserve_formatting)
 
 
 def _extract_captions_json(data: dict[str, Any], video_id: str) -> dict[str, Any]:
@@ -298,7 +338,10 @@ def _assert_playability(status: Any, video_id: str) -> None:
             raise ParseError(f"Video {video_id!r} is age-restricted.")
         if reason and "bot" in str(reason).lower():
             raise ParseError(
-                f"YouTube blocked the transcript request for {video_id!r} (bot check)."
+                with_block_mitigation(
+                    f"YouTube blocked the transcript request for {video_id!r} "
+                    "(bot check)"
+                )
             )
     if code == "ERROR" and reason == "This video is unavailable":
         raise ParseError(f"Video {video_id!r} is unavailable.")
@@ -307,7 +350,7 @@ def _assert_playability(status: Any, video_id: str) -> None:
 
 
 def _build_transcript_list(
-    client: InnerTubeClient,
+    client: Any,
     video_id: str,
     captions: dict[str, Any],
 ) -> TranscriptList:

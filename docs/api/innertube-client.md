@@ -384,9 +384,7 @@ from ytscrape import InnerTubeClient
 client = InnerTubeClient()
 
 # Download a timedtext / caption XML file directly
-xml = client.get_text(
-    "https://www.youtube.com/api/timedtext?v=dQw4w9WgXcQ&lang=en"
-)
+xml = client.get_text("https://www.youtube.com/api/timedtext?v=dQw4w9WgXcQ&lang=en")
 print(xml[:300])
 
 client.close()
@@ -419,3 +417,62 @@ with InnerTubeClient(timeout=60.0) as client:
     print(response["videoDetails"]["title"])
 # Session is closed automatically here
 ```
+
+***
+
+## AsyncInnerTubeClient
+
+Async low-level HTTP layer backed by `httpx.AsyncClient`. Mirrors `InnerTubeClient` endpoint wrappers (`search`, `player`, `browse`, `next`, `get_html`, `get_text`) as coroutines, and adds:
+
+* **`max_concurrency`** — `asyncio.Semaphore` limiting in-flight requests
+* **`max_retries` / `backoff_factor`** — exponential backoff with jitter on retryable statuses (408, 425, 429, 500, 502, 503, 504)
+
+Install: `pip install "ytscrape[async]"`.
+
+```python
+import asyncio
+from ytscrape import AsyncInnerTubeClient, AsyncYouTube
+
+
+async def main() -> None:
+    async with AsyncInnerTubeClient(
+        max_concurrency=8,
+        max_retries=3,
+        backoff_factor=0.5,
+        timeout=30.0,
+        language="en",
+        region="US",
+    ) as client:
+        data = await client.player("dQw4w9WgXcQ")
+        print(data["videoDetails"]["title"])
+
+        # Or hand the client to the high-level facade:
+        async with AsyncYouTube(client=client) as yt:
+            details = await yt.video("dQw4w9WgXcQ")
+            print(details.title)
+
+
+asyncio.run(main())
+```
+
+### Constructor (async-specific)
+
+```python
+AsyncInnerTubeClient(
+    *,
+    session: httpx.AsyncClient | None = None,
+    user_agent: str = "<Chrome UA>",
+    timeout: float = 30.0,
+    locale: Locale | None = None,
+    language: Language | str = "en",
+    region: Country | str = "US",
+    extractor: ContextExtractor | None = None,
+    max_concurrency: int = 8,
+    max_retries: int = 3,
+    backoff_factor: float = 0.5,
+)
+```
+
+Inject a custom `httpx.AsyncClient` (proxies, custom transports, timeouts) via `session=`. Prefer letting `AsyncYouTube` own the client lifecycle when using the facade.
+
+Most application code should use [`AsyncYouTube`](youtube.md) rather than calling InnerTube endpoints directly. Guide: [Async API](../guides/async.md).

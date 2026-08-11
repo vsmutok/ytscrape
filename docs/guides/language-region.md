@@ -28,7 +28,7 @@ from ytscrape import YouTube, Language, Country
 
 yt = YouTube(language=Language("de"), region=Country("DE"))
 print(yt.locale.language.code)  # "de"
-print(yt.locale.country.code)   # "DE"
+print(yt.locale.country.code)  # "DE"
 ```
 
 ## The `Locale` object

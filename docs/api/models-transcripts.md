@@ -79,6 +79,7 @@ A fully fetched and parsed transcript for a single video. Returned by `Transcrip
 
       ```python
       import json
+
       print(json.dumps(transcript.to_raw_data()[:3], indent=2))
       ```
 
@@ -125,11 +126,20 @@ Metadata for one available caption track. Instances are collected inside a `Tran
 
 **`fetch(*, preserve_formatting=False)`** (`Transcript`)
 
-:   Downloads the timedtext XML for this track, parses it into `TranscriptSnippet` instances, and returns a `Transcript` object.
+:   Downloads the timedtext XML for this track, parses it into `TranscriptSnippet` instances, and returns a `Transcript` object. Use this with the synchronous `YouTube` / `InnerTubeClient` path.
 
       * `preserve_formatting` — when `True`, semantic HTML tags (`<b>`, `<i>`, `<em>`, `<strong>`, etc.) are preserved in snippet text instead of being stripped. All other tags are still removed.
 
       Raises `ParseError` if the transcript XML cannot be parsed or if YouTube requires a PO token for this track.
+
+
+**`afetch(*, preserve_formatting=False)`** (`Transcript`) — *async*
+
+:   Async variant of `fetch()` for use with `AsyncYouTube` / `AsyncInnerTubeClient`. Same arguments and return type.
+
+      ```python
+      transcript = await track.afetch()
+      ```
 
 
 **`translate(language_code)`** (`TranscriptTrack`)
@@ -157,7 +167,7 @@ fr ("Français")
 
 ## TranscriptList
 
-The collection of all available caption tracks for a video. Returned by `YouTube.transcripts()` (which internally calls `list_transcripts`).
+The collection of all available caption tracks for a video. Returned by `YouTube.transcripts()` or `await AsyncYouTube.transcripts()` (which internally call the list-transcripts helpers).
 
 ### Attributes
 
@@ -234,7 +244,7 @@ print(transcript_list)  # human-readable summary of all tracks
 
 # Step 2 — find the best English track (manual preferred over generated)
 track = transcript_list.find_transcript(["en"])
-print(track)           # en ("English") [translatable]
+print(track)  # en ("English") [translatable]
 
 # Step 3 — fetch the transcript
 transcript = track.fetch()
@@ -254,6 +264,7 @@ for snippet in transcript:
 
 # Serialise to plain dicts
 import json
+
 print(json.dumps(transcript.to_raw_data()[:2], indent=2))
 
 # Translate to Spanish (if translatable)
@@ -269,4 +280,4 @@ if track.is_translatable:
 
 !!! warning
 
-    Some tracks require a PO token (indicated by `&exp=xpe` in their internal URL). Calling `fetch()` on such a track raises a `ParseError` with an explanatory message. This is a YouTube bot-check restriction and cannot be circumvented without a valid token.
+    Some tracks require a PO token (indicated by `&exp=xpe` in their internal URL). Calling `fetch()` on such a track raises a `ParseError` with an explanatory message. This is a YouTube bot-check restriction. The error recommends changing your IP or using a proxy (that helps in most cases); if it still fails, open a [GitHub issue](https://github.com/vsmutok/ytscrape/issues).

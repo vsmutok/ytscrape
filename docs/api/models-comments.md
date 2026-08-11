@@ -112,14 +112,15 @@ for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ", max_results=50):
     print(f"{comment.author}: {comment.text}")
 
 # Include replies and detect them
-for comment in yt.comments("https://youtu.be/dQw4w9WgXcQ", include_replies=True, max_results=100):
+for comment in yt.comments(
+    "https://youtu.be/dQw4w9WgXcQ", include_replies=True, max_results=100
+):
     prefix = "  ↳" if comment.is_reply else "•"
     print(f"{prefix} [{comment.author}] {comment.text}")
 
 # Find creator-hearted comments
 hearted = [
-    c for c in yt.comments("https://youtu.be/dQw4w9WgXcQ", max_results=200)
-    if c.heart
+    c for c in yt.comments("https://youtu.be/dQw4w9WgXcQ", max_results=200) if c.heart
 ]
 print(f"Found {len(hearted)} hearted comment(s)")
 
@@ -132,3 +133,26 @@ page2 = thread.fetch_next_page() if thread.has_more else []
 !!! note
 
     `like_count` is `None` whenever YouTube returns an abbreviated value like `"1.2K"` because abbreviations cannot be represented as an exact integer. In those cases `like_count_text` still holds the display string. If you need to display a like count unconditionally, always prefer `like_count_text`; use `like_count` only when you need arithmetic.
+
+
+***
+
+## AsyncCommentThread
+
+Returned by `await AsyncYouTube.comments()`. Yields the same `Comment` model. Use `async for` and `await thread.fetch_next_page()`:
+
+```python
+from ytscrape import AsyncYouTube, CommentSort
+
+async with AsyncYouTube() as yt:
+    thread = await yt.comments(
+        "dQw4w9WgXcQ",
+        max_results=100,
+        include_replies=True,
+        sort=CommentSort.NEWEST,
+    )
+    async for comment in thread:
+        print(comment.author, comment.text)
+```
+
+Full guide: [Async API](../guides/async.md).

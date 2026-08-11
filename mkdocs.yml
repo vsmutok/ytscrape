@@ -63,6 +63,7 @@ nav:
   - Introduction: index.md
   - Installation: installation.md
   - Quickstart: quickstart.md
+  - Examples: examples.md
   - Guides:
       - Searching: guides/searching.md
       - Video details: guides/video-details.md
@@ -71,6 +72,7 @@ nav:
       - Transcripts: guides/transcripts.md
       - Language & region: guides/language-region.md
       - Pagination: guides/pagination.md
+      - Async API: guides/async.md
       - Error handling: guides/error-handling.md
       - Advanced: guides/advanced.md
   - API reference:

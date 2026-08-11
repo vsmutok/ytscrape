@@ -1,38 +1,68 @@
 # Examples
 
-Short, runnable examples showing how to use **ytscrape**.
+Short, runnable scripts for **ytscrape**. Every feature example includes both a
+**sync** (`YouTube`) and an **async** (`AsyncYouTube`) implementation.
 
-Install the package first:
+## Install
 
 ```bash
 pip install ytscrape
+pip install "ytscrape[async]"   # only if you want --async / 10_async_concurrency
 ```
 
-Then run any example from the repository root:
+## Run
+
+From the repository root:
 
 ```bash
+# Sync (default)
 python examples/01_search_videos.py
-python examples/02_search_channels_playlists.py
-python examples/03_video_details.py
-python examples/04_pagination.py
-python examples/05_language_region.py
-python examples/06_error_handling.py
-python examples/07_video_comments.py
-python examples/08_channel_details.py
-python examples/09_transcript.py
+
+# Async counterpart of the same script
+python examples/01_search_videos.py --async
+
+# Concurrency / fan-out pattern (async only)
+python examples/10_async_concurrency.py
 ```
 
-| Example                                | What it shows                                             |
-| -------------------------------------- | --------------------------------------------------------- |
-| `01_search_videos.py`                  | Search for videos with `SearchFilter.VIDEOS`.             |
-| `02_search_channels_playlists.py`      | Search for channels and playlists.                        |
-| `03_video_details.py`                  | Fetch detailed metadata for a single video (id or URL).   |
-| `04_pagination.py`                     | Iterate transparently or page manually.                   |
-| `05_language_region.py`                | Localise results by interface language and region.        |
-| `06_error_handling.py`                 | Handle `ytscrape` exceptions gracefully.                  |
-| `07_video_comments.py`                 | Collect all comments (and replies) of a video.            |
-| `08_channel_details.py`                | Fetch detailed metadata for a single channel.             |
-| `09_transcript.py`                     | List caption tracks and fetch a video transcript.         |
+| Example | What it shows |
+| ------- | ------------- |
+| [`01_search_videos.py`](01_search_videos.py) | Search videos with `SearchFilter.VIDEOS` (sync + async). |
+| [`02_search_channels_playlists.py`](02_search_channels_playlists.py) | Search channels and playlists (sync + async). |
+| [`03_video_details.py`](03_video_details.py) | Fetch `VideoDetails` by id or URL (sync + async). |
+| [`04_pagination.py`](04_pagination.py) | Transparent iteration and manual pages (sync + async). |
+| [`05_language_region.py`](05_language_region.py) | Localise with `language` / `region` / `Locale` (sync + async). |
+| [`06_error_handling.py`](06_error_handling.py) | Catch `ParseError`, `RequestError`, `YtScraperError` (sync + async). |
+| [`07_video_comments.py`](07_video_comments.py) | Comments, replies, `CommentSort.NEWEST` (sync + async). |
+| [`08_channel_details.py`](08_channel_details.py) | Fetch `ChannelDetails` by id, handle or URL (sync + async). |
+| [`09_transcript.py`](09_transcript.py) | List caption tracks and fetch a transcript (sync + async). |
+| [`10_async_concurrency.py`](10_async_concurrency.py) | Parallel `asyncio.gather` with `max_concurrency` (async only). |
 
-> These examples hit YouTube's private endpoints and require a network
-> connection. Use the library responsibly.
+## Pattern used in each file
+
+```python
+def run_sync() -> None:
+    with YouTube() as yt:
+        ...
+
+
+async def run_async() -> None:
+    async with AsyncYouTube() as yt:
+        ...
+
+
+# CLI: default = sync, pass --async for AsyncYouTube
+```
+
+Async iteration differs only in the I/O surface:
+
+| Sync | Async |
+| ---- | ----- |
+| `for item in yt.search(...)` | `async for item in await yt.search(...)` |
+| `yt.video(...)` | `await yt.video(...)` |
+| `for c in yt.comments(...)` | `async for c in await yt.comments(...)` |
+
+Full guides and API reference: [docs site](https://vsmutok.github.io/ytscrape/).
+
+> These examples hit YouTube's private endpoints and need a network connection.
+> Use the library responsibly.

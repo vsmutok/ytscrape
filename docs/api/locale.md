@@ -40,7 +40,7 @@ from ytscrape import Language
 
 # Standard construction — normalised to lowercase
 lang = Language("EN")
-print(lang.code)   # "en"
+print(lang.code)  # "en"
 
 # Ukrainian
 lang_uk = Language("uk")

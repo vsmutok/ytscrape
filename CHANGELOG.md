@@ -5,6 +5,26 @@ All notable changes to **ytscrape** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-08-11
+
+### Added
+
+- ⚡ Async API: `AsyncYouTube` / `AsyncInnerTubeClient` with the same public
+  surface as the sync facade (`search`, `video`, `channel`, `comments`,
+  `transcript` / `transcripts`). Optional extra:
+  `pip install "ytscrape[async]"` (`httpx`).
+- Shared parsing path for sync and async (`ytscrape.parsing` + models).
+- Async concurrency limit (`max_concurrency`) and exponential backoff with
+  jitter on 429 / 5xx / transport errors (`max_retries`, `backoff_factor`).
+- Async paginators: `AsyncSearchResults`, `AsyncCommentThread` (`async for`).
+- Feature examples `01`–`09` now include both sync and async paths
+  (`run_sync` / `run_async`, CLI flag `--async`).
+- Concurrency-focused example `examples/10_async_concurrency.py`.
+- Docs site updates: async guide (`docs/guides/async.md`),
+  `docs/examples.md`, plus installation, quickstart, advanced, pagination,
+  comments, transcripts, API pages, and a leaner README that points at docs
+  instead of duplicating long guides.
+
 ## [0.1.4] - 2026-08-6
 
 ### Added

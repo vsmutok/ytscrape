@@ -108,3 +108,8 @@ with YouTube() as yt:
 !!! tip
 
     Catching `YtScraperError` at the outermost level is the simplest guard when you don't need to distinguish the failure mode — for example in a CLI tool or a background worker that just logs the error and moves on.
+
+
+!!! note "Bot checks and blocks"
+
+    Some `ParseError` / `ContextExtractionError` messages indicate a consent wall, captcha, or bot check (including transcript PO-token / `exp=xpe` failures). The message recommends changing your IP or using a proxy (that helps in most cases); if it still fails, open a [GitHub issue](https://github.com/vsmutok/ytscrape/issues). The same exceptions apply under `AsyncYouTube`.

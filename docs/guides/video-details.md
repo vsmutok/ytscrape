@@ -55,8 +55,8 @@ with YouTube() as yt:
     details = yt.video("dQw4w9WgXcQ")
 
     print(details.description)
-    print(details.channel_id)    # UC…
-    print(details.thumbnail)     # URL of the highest-resolution thumbnail
+    print(details.channel_id)  # UC…
+    print(details.thumbnail)  # URL of the highest-resolution thumbnail
 ```
 
 ## Field reference

@@ -126,3 +126,40 @@ yt = YouTube(client=client)
 !!! warning
 
     `requests.Session` is **not thread-safe**. If you run ytscrape from multiple threads, create a separate `YouTube` (and therefore a separate session) per thread rather than sharing one instance.
+
+
+## Async client (`httpx`)
+
+For `asyncio` apps, use [`AsyncYouTube`](async.md) / `AsyncInnerTubeClient` instead of injecting a `requests.Session`. Concurrency and retries are first-class constructor arguments:
+
+```python
+import asyncio
+import httpx
+from ytscrape import AsyncYouTube, AsyncInnerTubeClient
+
+
+async def main() -> None:
+    session = httpx.AsyncClient(proxy="http://user:pass@proxy:8080")
+    client = AsyncInnerTubeClient(
+        session=session,
+        max_concurrency=8,
+        max_retries=3,
+        backoff_factor=0.5,
+        timeout=15.0,
+    )
+    async with AsyncYouTube(client=client) as yt:
+        details = await yt.video("dQw4w9WgXcQ")
+        print(details.title)
+
+
+asyncio.run(main())
+```
+
+Or configure the default client without building httpx yourself:
+
+```python
+async with AsyncYouTube(max_concurrency=4, max_retries=5, timeout=20.0) as yt:
+    ...
+```
+
+See the full [Async API guide](async.md) for pagination, multi-video `asyncio.gather` patterns, and install instructions (`pip install "ytscrape[async]"`).

@@ -2,6 +2,24 @@
 
 from __future__ import annotations
 
+# Public issue tracker — appended to bot-check / block style errors.
+GITHUB_ISSUES_URL = "https://github.com/vsmutok/ytscrape/issues"
+
+# Shared advice when YouTube rate-limits, bot-checks, or serves a consent wall.
+_BLOCK_MITIGATION_HINT = (
+    "Try changing your IP address or using a proxy — that resolves this in "
+    f"about 99% of cases. If the problem persists, please open a GitHub issue: "
+    f"{GITHUB_ISSUES_URL}"
+)
+
+
+def with_block_mitigation(message: str) -> str:
+    """Append IP/proxy + GitHub issue guidance to a block-related error message."""
+    base = message.rstrip()
+    if not base.endswith((".", "!", "?")):
+        base = f"{base}."
+    return f"{base} {_BLOCK_MITIGATION_HINT}"
+
 
 class YtScraperError(Exception):
     """Base exception for all errors raised by ytscrape."""

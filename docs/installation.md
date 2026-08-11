@@ -17,6 +17,28 @@ ytscrape is a pure-Python library published on [PyPI](https://pypi.org/project/y
 
 No browser, no driver, and no external binaries are required.
 
+## Optional: async extra
+
+The asynchronous API (`AsyncYouTube`, `AsyncInnerTubeClient`) needs [`httpx`](https://pypi.org/project/httpx/). Install it via the package extra:
+
+=== "pip"
+
+    ```bash
+    pip install "ytscrape[async]"
+    ```
+
+=== "uv"
+
+    ```bash
+    uv add "ytscrape[async]"
+    ```
+
+| Extra package                                          | Purpose                                                                 |
+| ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| [`httpx`](https://pypi.org/project/httpx/) `>=0.27`    | Async HTTP client used by `AsyncInnerTubeClient` (concurrency + backoff). |
+
+The base install stays free of httpx if you only use the synchronous `YouTube` API. See the [Async API guide](guides/async.md) for usage.
+
 ## Install the Package
 
 === "pip"
@@ -92,4 +114,4 @@ uv run pre-commit run --all-files        # ruff + format + bandit
 
 ## Next Steps
 
-With ytscrape installed, follow the [Quickstart](quickstart.md) to write your first search, metadata fetch, and comment collection in minutes.
+With ytscrape installed, follow the [Quickstart](quickstart.md) to write your first search, metadata fetch, and comment collection in minutes. For concurrent scraping with `asyncio`, install `ytscrape[async]` and read the [Async API guide](guides/async.md).

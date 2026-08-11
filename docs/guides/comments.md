@@ -128,6 +128,32 @@ Every comment is a frozen dataclass with the following fields:
     `like_count` is `None` when YouTube returns an abbreviated string like `"1.2K"` instead of an exact integer. Use `like_count_text` whenever you need to display the count exactly as YouTube shows it.
 
 
+## Async comments
+
+Install `ytscrape[async]`, then use `AsyncYouTube` with `await` / `async for`. Arguments (`max_results`, `include_replies`, `sort`) are the same:
+
+```python
+import asyncio
+from ytscrape import AsyncYouTube, CommentSort
+
+
+async def main() -> None:
+    async with AsyncYouTube(max_concurrency=8) as yt:
+        thread = await yt.comments(
+            "dQw4w9WgXcQ",
+            max_results=500,
+            include_replies=True,
+            sort=CommentSort.NEWEST,
+        )
+        async for comment in thread:
+            print(comment.author, comment.text)
+
+
+asyncio.run(main())
+```
+
+To collect comments from **many videos** faster, gather independent tasks on one shared client (see [Async API](async.md) and `examples/10_async_concurrency.py`).
+
 ## Disabled comments
 
 If a video has comments turned off, `yt.comments()` raises `ParseError` as soon as the call is made — before you start iterating:

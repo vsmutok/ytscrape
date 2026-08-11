@@ -200,3 +200,22 @@ top20 = list(yt.search("synthwave", max_results=20))
 !!! tip
 
     `max_results` limits the number of items **yielded by the iterator**, not the number of items fetched per page. YouTube returns roughly 20 results per page, so a `max_results` of 10 still fetches the first full page but stops yielding after 10 items.
+
+
+***
+
+## AsyncSearchResults
+
+Returned by `await AsyncYouTube.search()`. Same item types (`Video`, `Channel`, `Playlist`) and `has_more` / `max_results` behaviour as `SearchResults`, but iteration and paging are async:
+
+```python
+from ytscrape import AsyncYouTube
+
+async with AsyncYouTube() as yt:
+    results = await yt.search("lo-fi music", max_results=20)
+    async for item in results:
+        print(item.title)
+    page = await results.fetch_next_page()
+```
+
+See the [Async API guide](../guides/async.md).

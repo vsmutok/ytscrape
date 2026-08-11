@@ -148,6 +148,31 @@ Each yielded item is a frozen, fully typed dataclass. The concrete type depends 
 | `thumbnail`   | `str \| None` | URL of the playlist thumbnail                                               |
 | `url`         | `str`         | Canonical `https://www.youtube.com/playlist?list=…` URL (computed property) |
 
+## Async search
+
+With `AsyncYouTube` (optional `ytscrape[async]` extra):
+
+```python
+import asyncio
+from ytscrape import AsyncYouTube, SearchFilter
+
+
+async def main() -> None:
+    async with AsyncYouTube() as yt:
+        results = await yt.search(
+            "python tutorial",
+            filter=SearchFilter.VIDEOS,
+            max_results=10,
+        )
+        async for video in results:
+            print(video.title, video.url)
+
+
+asyncio.run(main())
+```
+
+See the [Async API guide](async.md).
+
 !!! tip
 
-    Create one `YouTube` instance and reuse it across multiple searches. The instance holds a warm HTTP session and a cached InnerTube context, so subsequent calls skip the initial context-extraction request and run noticeably faster.
+    Create one `YouTube` or `AsyncYouTube` instance and reuse it across multiple searches. The instance holds a warm HTTP session and a cached InnerTube context, so subsequent calls skip the initial context-extraction request and run noticeably faster.

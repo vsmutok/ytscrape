@@ -352,7 +352,9 @@ yt = YouTube()
 
 track_list = yt.transcripts("dQw4w9WgXcQ")
 for track in track_list:
-    print(track.language, track.language_code, "auto" if track.is_generated else "manual")
+    print(
+        track.language, track.language_code, "auto" if track.is_generated else "manual"
+    )
 
 # Find a specific track and fetch it
 track = track_list.find_transcript(["en"])
@@ -410,3 +412,80 @@ with YouTube(language="de", region="DE") as yt:
         print(video.title, video.url)
 # HTTP session is closed automatically here
 ```
+
+***
+
+## AsyncYouTube
+
+`AsyncYouTube` is the async counterpart of `YouTube`. Method names and arguments match the sync facade; call sites use `await` and `async for`. Requires the optional extra: `pip install "ytscrape[async]"`.
+
+```python
+import asyncio
+from ytscrape import AsyncYouTube, SearchFilter
+
+
+async def main() -> None:
+    async with AsyncYouTube(
+        language="en",
+        region="US",
+        max_concurrency=8,
+        max_retries=3,
+        backoff_factor=0.5,
+        timeout=30.0,
+    ) as yt:
+        results = await yt.search(
+            "python",
+            filter=SearchFilter.VIDEOS,
+            max_results=10,
+        )
+        async for video in results:
+            print(video.title, video.url)
+
+        details = await yt.video("dQw4w9WgXcQ")
+        channel = await yt.channel("@YouTube")
+        thread = await yt.comments("dQw4w9WgXcQ", max_results=50, sort="newest")
+        async for comment in thread:
+            print(comment.author)
+
+        transcript = await yt.transcript("dQw4w9WgXcQ", languages=["en"])
+        tracks = await yt.transcripts("dQw4w9WgXcQ")
+
+
+asyncio.run(main())
+```
+
+### Constructor extras (async only)
+
+| Argument            | Default | Description |
+| ------------------- | ------: | ----------- |
+| `client`            | `None`  | Pre-built [`AsyncInnerTubeClient`](innertube-client.md). When set, locale/timeout/concurrency kwargs for the default client are ignored. |
+| `max_concurrency`   | `8`     | Cap on concurrent HTTP requests (default client). |
+| `max_retries`       | `3`     | Retry budget for transient HTTP failures. |
+| `backoff_factor`    | `0.5`   | Base delay for exponential backoff. |
+| `timeout`           | `30.0`  | Per-request timeout in seconds. |
+
+Locale arguments (`locale`, `language`, `region`) behave like on `YouTube`.
+
+### Methods (async)
+
+| Method | Returns |
+| ------ | ------- |
+| `await yt.search(query, *, filter=..., max_results=...)` | `AsyncSearchResults` |
+| `await yt.video(video)` | `VideoDetails` |
+| `await yt.channel(channel)` | `ChannelDetails` |
+| `await yt.comments(video, *, max_results=..., include_replies=..., sort=...)` | `AsyncCommentThread` |
+| `await yt.transcript(video, *, languages=..., preserve_formatting=...)` | `Transcript` |
+| `await yt.transcripts(video)` | `TranscriptList` |
+| `await yt.aclose()` / `await yt.close()` | `None` |
+
+Properties `client` and `locale` mirror the sync API (`client` is an `AsyncInnerTubeClient`).
+
+### AsyncSearchResults / AsyncCommentThread
+
+Same pagination contract as [`SearchResults`](models-search.md) / [`CommentThread`](models-comments.md):
+
+* `async for item in results:` — lazy pages
+* `await results.fetch_next_page()` — manual page load
+* `results.has_more` — continuation available
+
+See the [Async API guide](../guides/async.md) for concurrency patterns and multi-video `asyncio.gather` examples.

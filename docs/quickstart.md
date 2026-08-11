@@ -24,6 +24,7 @@ Verify the installation by importing the package and checking its version:
 
 ```python
 import ytscrape
+
 print(ytscrape.__version__)  # e.g. 0.1.4
 ```
 
@@ -104,7 +105,38 @@ with YouTube() as yt:
     Always use `YouTube` as a context manager (`with YouTube() as yt:`). This keeps a single HTTP session open for the duration of your script, reuses the extracted InnerTube context across all requests, and ensures the session is closed cleanly on exit. If you need to manage the lifetime manually, call `yt.close()` when you are done.
 
 
+### 5. Optional: async API
+
+For concurrent I/O (many videos or queries at once), install the optional extra and use `AsyncYouTube` — the same methods, but with `await` and `async for`:
+
+```bash
+pip install "ytscrape[async]"
+```
+
+```python
+import asyncio
+from ytscrape import AsyncYouTube, SearchFilter
+
+
+async def main() -> None:
+    async with AsyncYouTube(max_concurrency=8) as yt:
+        results = await yt.search(
+            "python tutorial",
+            filter=SearchFilter.VIDEOS,
+            max_results=10,
+        )
+        async for video in results:
+            print(video.title, video.url)
+
+
+asyncio.run(main())
+```
+
+Full details: [Async API guide](guides/async.md).
+
 ## Next Steps
 
-* **[Installation](installation.md)** — Python version requirements, all runtime dependencies, and how to install from source.
+* **[Examples](examples.md)** — runnable scripts with **sync and async** in every file (`python examples/….py` / `--async`).
+* **[Installation](installation.md)** — Python version requirements, runtime dependencies, optional `ytscrape[async]`, and install from source.
+* **[Async API](guides/async.md)** — `AsyncYouTube`, concurrency limits, backoff, and multi-video patterns.
 * **Guides** — Deep dives into search filters, language and region localisation, transparent pagination, channel metadata, transcripts, error handling, and advanced configuration (proxies, retries, custom sessions).

@@ -42,14 +42,17 @@ class ContextExtractor:
             ContextExtractionError: If any required value is missing.
         """
         # Imported lazily to keep this module free of package-level cycles.
-        from .exceptions import ContextExtractionError
+        from .exceptions import ContextExtractionError, with_block_mitigation
 
         values: dict[str, str] = {}
         for name, pattern in self._PATTERNS.items():
             match = re.search(pattern, html)
             if not match:
                 raise ContextExtractionError(
-                    f"Unable to find {name!r} in YouTube response."
+                    with_block_mitigation(
+                        f"Unable to find {name!r} in YouTube response "
+                        "(page may be a consent wall, captcha, or bot check)"
+                    )
                 )
             values[name] = match.group(1)
 
