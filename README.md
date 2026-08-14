@@ -1,8 +1,6 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text_dark.png">
-    <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text.png" alt="ytscrape" width="520">
-  </picture>
+  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text_dark.png#gh-light-mode-only" alt="ytscrape" width="520">
+  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text.png#gh-dark-mode-only" alt="ytscrape" width="520">
 </p>
 
 # ytscrape — Free YouTube Scraper for Python

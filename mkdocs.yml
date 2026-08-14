@@ -10,8 +10,8 @@ site_dir: site
 
 theme:
   name: material
-  logo: assets/logo.png
-  favicon: assets/logo.png
+  logo: assets/logo_dark.png
+  favicon: assets/logo_dark.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
