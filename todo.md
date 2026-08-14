@@ -57,6 +57,7 @@ What's left in **ytscrape**. Rough priority order within each section.
 - [ ] Dependabot / scheduled `pre-commit autoupdate`
 
 ## Docs
-- [ ] Examples for playlists and CSV/JSON export
-- [ ] CLI demo GIF in the README
+- [x] Examples / guide for CSV/JSON export
+  *(playlist examples still open)*
+- [x] CLI demo GIF in the README
 - [ ] Optional benchmarks vs `yt-dlp` / Playwright

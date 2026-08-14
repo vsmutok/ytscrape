@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo_text_with_bg.png" alt="ytscrape" width="520">
+</p>
+
 # ytscrape — Free Open-Source Python YouTube Scraper
 
 > Learn what ytscrape is, how it uses YouTube's InnerTube API over plain HTTP, and how it compares to the YouTube Data API, yt-dlp, and browser automation.

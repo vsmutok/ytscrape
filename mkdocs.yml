@@ -10,6 +10,8 @@ site_dir: site
 
 theme:
   name: material
+  logo: assets/logo.png
+  favicon: assets/logo.png
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
@@ -73,6 +75,7 @@ nav:
       - Language & region: guides/language-region.md
       - Pagination: guides/pagination.md
       - Async API: guides/async.md
+      - Export JSON / CSV: guides/export.md
       - Error handling: guides/error-handling.md
       - Advanced: guides/advanced.md
   - API reference:

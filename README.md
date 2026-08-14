@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text_with_bg.png" alt="ytscrape" width="520">
+</p>
+
 # ytscrape — Free YouTube Scraper for Python
 
 **Scrape YouTube search results, video & channel metadata, comments and
@@ -160,6 +164,13 @@ Deep dives live on the docs site (not duplicated here):
 | Examples (sync + async) | [`examples/`](examples/) |
 
 ### CLI cheatsheet
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/demo_cli.gif" alt="ytscrape CLI demo" width="720">
+</p>
+
+The CLI prints colourful boxed tables under a mini `▶ ytscrape` wordmark, with a
+spinner while requests are in flight:
 
 ```bash
 ytscrape search "python tutorial" --filter videos --max 10
