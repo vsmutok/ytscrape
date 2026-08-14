@@ -29,6 +29,7 @@ __all__ = [
 ]
 
 _COMPUTED = ("url", "text", "is_translatable")
+_MISSING = object()
 
 
 def to_dict(obj: Any) -> Any:
@@ -46,11 +47,8 @@ def to_dict(obj: Any) -> Any:
         for name in _COMPUTED:
             if name in data:
                 continue
-            try:
-                value = getattr(obj, name)
-            except Exception:
-                continue
-            if callable(value):
+            value = getattr(obj, name, _MISSING)
+            if value is _MISSING or callable(value):
                 continue
             data[name] = to_dict(value)
         type_name = type(obj).__name__
