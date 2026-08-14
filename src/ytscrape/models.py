@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from typing import Any
 from urllib.parse import parse_qs, unquote, urlparse
 
+from .export import Exportable
+
 __all__ = ["Video", "Channel", "Playlist", "VideoDetails", "ChannelDetails", "Comment"]
 
 
@@ -44,86 +46,8 @@ def _thumbnail(node: Any) -> str | None:
     return None
 
 
-# --- lockupViewModel helpers -------------------------------------------------
-#
-# Modern YouTube search responses wrap results in a ``lockupViewModel`` instead
-# of the classic ``videoRenderer`` / ``channelRenderer`` / ``playlistRenderer``.
-# The helpers below extract the interesting bits from that structure so the
-# models can offer a ``from_lockup`` factory alongside ``from_renderer``.
-
-
-def _lockup_title(lockup: dict[str, Any]) -> str | None:
-    """Return the title of a ``lockupViewModel``."""
-    meta = lockup.get("metadata", {}).get("lockupMetadataViewModel", {})
-    title = meta.get("title")
-    if isinstance(title, dict):
-        return title.get("content")
-    return None
-
-
-def _lockup_metadata_rows(lockup: dict[str, Any]) -> list[dict[str, Any]]:
-    """Return the ``metadataRows`` list of a ``lockupViewModel`` (or empty)."""
-    meta = lockup.get("metadata", {}).get("lockupMetadataViewModel", {})
-    rows = (
-        meta.get("metadata", {}).get("contentMetadataViewModel", {}).get("metadataRows")
-    )
-    return rows if isinstance(rows, list) else []
-
-
-def _lockup_row_texts(row: dict[str, Any]) -> list[str]:
-    """Return the plain-text parts of a single metadata row."""
-    texts: list[str] = []
-    for part in row.get("metadataParts", []) or []:
-        text = part.get("text")
-        if isinstance(text, dict) and text.get("content"):
-            texts.append(text["content"])
-    return texts
-
-
-def _lockup_channel(lockup: dict[str, Any]) -> tuple[str | None, str | None]:
-    """Return ``(channel_name, channel_id)`` extracted from a lockup, if any."""
-    for row in _lockup_metadata_rows(lockup):
-        for part in row.get("metadataParts", []) or []:
-            text = part.get("text")
-            if not isinstance(text, dict):
-                continue
-            for run in text.get("commandRuns", []) or []:
-                browse = (
-                    run.get("onTap", {})
-                    .get("innertubeCommand", {})
-                    .get("browseEndpoint", {})
-                )
-                browse_id = browse.get("browseId")
-                if isinstance(browse_id, str) and browse_id.startswith("UC"):
-                    return text.get("content"), browse_id
-    return None, None
-
-
-def _lockup_thumbnail(lockup: dict[str, Any]) -> str | None:
-    """Return the largest thumbnail URL found inside a ``lockupViewModel``."""
-    best: str | None = None
-
-    def _walk(node: Any) -> None:
-        nonlocal best
-        if isinstance(node, dict):
-            sources = node.get("sources")
-            if isinstance(sources, list):
-                for src in sources:
-                    url = src.get("url") if isinstance(src, dict) else None
-                    if isinstance(url, str) and url.startswith("http"):
-                        best = url
-            for value in node.values():
-                _walk(value)
-        elif isinstance(node, list):
-            for item in node:
-                _walk(item)
-
-    _walk(lockup.get("contentImage"))
-    return best
-
-
 @dataclass(frozen=True, slots=True)
-class Video:
+class Video(Exportable):
     """A single video result from a search or channel listing."""
 
     video_id: str
@@ -134,6 +58,7 @@ class Video:
     views: str | None = None
     published: str | None = None
     thumbnail: str | None = None
+    description: str | None = None
 
     @property
     def url(self) -> str:
@@ -158,27 +83,12 @@ class Video:
             views=_text(renderer.get("viewCountText")),
             published=_text(renderer.get("publishedTimeText")),
             thumbnail=_thumbnail(renderer.get("thumbnail")),
-        )
-
-    @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> Video:
-        """Build a :class:`Video` from a ``lockupViewModel`` dictionary.
-
-        Used for the modern search response format where the ``contentType``
-        is ``LOCKUP_CONTENT_TYPE_VIDEO``.
-        """
-        channel, channel_id = _lockup_channel(lockup)
-        return cls(
-            video_id=lockup.get("contentId", ""),
-            title=_lockup_title(lockup),
-            channel=channel,
-            channel_id=channel_id,
-            thumbnail=_lockup_thumbnail(lockup),
+            description=_text(renderer.get("descriptionSnippet")),
         )
 
 
 @dataclass(frozen=True, slots=True)
-class Channel:
+class Channel(Exportable):
     """A single channel result from a search."""
 
     channel_id: str
@@ -207,29 +117,9 @@ class Channel:
             thumbnail=_thumbnail(renderer.get("thumbnail")),
         )
 
-    @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> Channel:
-        """Build a :class:`Channel` from a ``lockupViewModel`` dictionary.
-
-        Used for the modern search response format where the ``contentType``
-        is ``LOCKUP_CONTENT_TYPE_CHANNEL``.
-        """
-        rows = _lockup_metadata_rows(lockup)
-        # The first metadata row typically holds the subscriber / video count.
-        subscribers = None
-        if rows:
-            texts = _lockup_row_texts(rows[0])
-            subscribers = texts[0] if texts else None
-        return cls(
-            channel_id=lockup.get("contentId", ""),
-            title=_lockup_title(lockup),
-            subscribers=subscribers,
-            thumbnail=_lockup_thumbnail(lockup),
-        )
-
 
 @dataclass(frozen=True, slots=True)
-class Playlist:
+class Playlist(Exportable):
     """A single playlist result from a search."""
 
     playlist_id: str
@@ -254,24 +144,9 @@ class Playlist:
             thumbnail=_thumbnail(renderer.get("thumbnail")),
         )
 
-    @classmethod
-    def from_lockup(cls, lockup: dict[str, Any]) -> Playlist:
-        """Build a :class:`Playlist` from a ``lockupViewModel`` dictionary.
-
-        Used for the modern search response format where the ``contentType``
-        is ``LOCKUP_CONTENT_TYPE_PLAYLIST``.
-        """
-        channel, _ = _lockup_channel(lockup)
-        return cls(
-            playlist_id=lockup.get("contentId", ""),
-            title=_lockup_title(lockup),
-            channel=channel,
-            thumbnail=_lockup_thumbnail(lockup),
-        )
-
 
 @dataclass(frozen=True, slots=True)
-class VideoDetails:
+class VideoDetails(Exportable):
     """Detailed metadata about a single video fetched by id/URL."""
 
     video_id: str
@@ -284,6 +159,16 @@ class VideoDetails:
     keywords: tuple[str, ...] = field(default_factory=tuple)
     is_live: bool = False
     thumbnail: str | None = None
+    published: str | None = None
+    upload_date: str | None = None
+    category: str | None = None
+    owner_profile_url: str | None = None
+    embed_url: str | None = None
+    is_private: bool = False
+    is_upcoming: bool = False
+    allow_ratings: bool | None = None
+    is_family_safe: bool | None = None
+    available_countries: tuple[str, ...] = field(default_factory=tuple)
 
     @property
     def url(self) -> str:
@@ -294,6 +179,11 @@ class VideoDetails:
     def from_player_response(cls, data: dict[str, Any]) -> VideoDetails:
         """Build :class:`VideoDetails` from a ``player`` endpoint response."""
         details = data.get("videoDetails", {})
+        if not isinstance(details, dict):
+            details = {}
+        micro = data.get("microformat", {}).get("playerMicroformatRenderer", {})
+        if not isinstance(micro, dict):
+            micro = {}
 
         def _int(value: Any) -> int | None:
             try:
@@ -301,17 +191,51 @@ class VideoDetails:
             except (TypeError, ValueError):
                 return None
 
+        def _bool_or_none(value: Any) -> bool | None:
+            if isinstance(value, bool):
+                return value
+            return None
+
+        description = details.get("shortDescription")
+        if not description:
+            desc_node = micro.get("description")
+            if isinstance(desc_node, dict):
+                description = desc_node.get("simpleText")
+
+        countries = micro.get("availableCountries") or ()
+        if not isinstance(countries, list):
+            countries = ()
+
+        embed = micro.get("embed") if isinstance(micro.get("embed"), dict) else {}
+        embed_url = embed.get("iframeUrl") if isinstance(embed, dict) else None
+
         return cls(
-            video_id=details.get("videoId", ""),
-            title=details.get("title"),
-            description=details.get("shortDescription"),
-            channel=details.get("author"),
-            channel_id=details.get("channelId"),
-            length_seconds=_int(details.get("lengthSeconds")),
-            views=_int(details.get("viewCount")),
+            video_id=details.get("videoId") or micro.get("externalVideoId") or "",
+            title=details.get("title") or _text(micro.get("title")),
+            description=description,
+            channel=details.get("author") or micro.get("ownerChannelName"),
+            channel_id=details.get("channelId") or micro.get("externalChannelId"),
+            length_seconds=_int(details.get("lengthSeconds"))
+            or _int(micro.get("lengthSeconds")),
+            views=_int(details.get("viewCount")) or _int(micro.get("viewCount")),
             keywords=tuple(details.get("keywords", []) or ()),
-            is_live=bool(details.get("isLiveContent", False)),
-            thumbnail=_thumbnail(details.get("thumbnail")),
+            is_live=bool(
+                details.get("isLive")
+                or details.get("isLiveContent")
+                or micro.get("liveBroadcastDetails", {})
+            ),
+            thumbnail=_thumbnail(details.get("thumbnail"))
+            or _thumbnail(micro.get("thumbnail")),
+            published=micro.get("publishDate") or micro.get("uploadDate"),
+            upload_date=micro.get("uploadDate"),
+            category=micro.get("category"),
+            owner_profile_url=micro.get("ownerProfileUrl"),
+            embed_url=embed_url if isinstance(embed_url, str) else None,
+            is_private=bool(details.get("isPrivate", False)),
+            is_upcoming=bool(details.get("isUpcoming", False)),
+            allow_ratings=_bool_or_none(details.get("allowRatings")),
+            is_family_safe=_bool_or_none(micro.get("isFamilySafe")),
+            available_countries=tuple(c for c in countries if isinstance(c, str)),
         )
 
 
@@ -617,7 +541,7 @@ def _links_from_attribution(data: dict[str, Any]) -> dict[str, str]:
 
 
 @dataclass(frozen=True, slots=True)
-class ChannelDetails:
+class ChannelDetails(Exportable):
     """Detailed metadata about a single channel fetched by id/URL/handle."""
 
     channel_id: str
@@ -771,7 +695,7 @@ def _int_or_none(value: Any) -> int | None:
 
 
 @dataclass(frozen=True, slots=True)
-class Comment:
+class Comment(Exportable):
     """A single comment (top-level or reply) on a video."""
 
     comment_id: str

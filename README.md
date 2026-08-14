@@ -35,6 +35,8 @@ Sync (`YouTube`) and async (`AsyncYouTube`) share the same surface.
 - 🌍 **Localisation** — `language` (`hl`) and `region` (`gl`), validated ISO codes.
 - ⚡ **Sync & async** — optional `httpx` extra for `AsyncYouTube`.
 - 🖥️ **CLI included** — `ytscrape search "python" --max 10`.
+- 📤 **JSON / CSV export** — `video.to_json()`, `dumps_csv(results)`, or
+  `ytscrape search "python" --format json`.
 
 ## Installation
 

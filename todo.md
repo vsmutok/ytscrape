@@ -32,16 +32,19 @@ What's left in **ytscrape**. Rough priority order within each section.
   *(e.g. `Video.views`, `Channel.subscribers`; `VideoDetails.views` is already `int`)*
 - [ ] Parsed `published_at: datetime` where available
 - [ ] Navigation helpers: `video.comments()`, `video.channel()`, `channel.videos()`
-- [ ] `.to_dict()` / `.to_json()` (or shared serializers)
+- [x] `.to_dict()` / `.to_json()` (or shared serializers)
 - [ ] Thumbnails as a list of sizes (not only largest URL)
 
 ## CLI
 
-- [ ] `--json` / `--jsonl` / `--csv` output
+- [x] `--json` / `--csv` output (`--format json|csv`)
+  *(`--jsonl` still open)*
 - [ ] Commands for playlist, trending, channel tabs (after library APIs)
-- [ ] `--output`, `--quiet`, `--limit`, stable exit codes
-- [ ] Progress for long collections
-- [ ] Split handlers/formatters out of `__main__.py`
+- [x] `--output` / `-o`
+  *(`--quiet`, `--limit`, stable exit codes still open)*
+- [x] Progress for long collections (braille spinner in table mode)
+- [x] Split CLI helpers out of `__main__.py` into `_cli.py`
+  *(handlers/formatters still live in `__main__.py`)*
 
 ## Tests & CI
 

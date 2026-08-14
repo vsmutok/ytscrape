@@ -19,26 +19,30 @@ def run_sync() -> None:
         # A plain id or any YouTube URL both work.
         details = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-        print(f"Title:    {details.title}")
-        print(f"Channel:  {details.channel}")
-        print(f"Views:    {details.views}")
-        print(f"Length:   {details.length_seconds}s")
-        print(f"Live:     {details.is_live}")
-        print(f"Keywords: {', '.join(details.keywords[:5])}")
-        print(f"URL:      {details.url}")
+        print(f"Title:     {details.title}")
+        print(f"Channel:   {details.channel}")
+        print(f"Views:     {details.views}")
+        print(f"Length:    {details.length_seconds}s")
+        print(f"Published: {details.published}")
+        print(f"Category:  {details.category}")
+        print(f"Live:      {details.is_live}")
+        print(f"Keywords:  {', '.join(details.keywords[:5])}")
+        print(f"URL:       {details.url}")
 
 
 async def run_async() -> None:
     async with AsyncYouTube() as yt:
         details = await yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-        print(f"Title:    {details.title}")
-        print(f"Channel:  {details.channel}")
-        print(f"Views:    {details.views}")
-        print(f"Length:   {details.length_seconds}s")
-        print(f"Live:     {details.is_live}")
-        print(f"Keywords: {', '.join(details.keywords[:5])}")
-        print(f"URL:      {details.url}")
+        print(f"Title:     {details.title}")
+        print(f"Channel:   {details.channel}")
+        print(f"Views:     {details.views}")
+        print(f"Length:    {details.length_seconds}s")
+        print(f"Published: {details.published}")
+        print(f"Category:  {details.category}")
+        print(f"Live:      {details.is_live}")
+        print(f"Keywords:  {', '.join(details.keywords[:5])}")
+        print(f"URL:       {details.url}")
 
 
 def main() -> None:

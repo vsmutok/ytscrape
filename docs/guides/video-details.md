@@ -39,13 +39,15 @@ with YouTube() as yt:
     # A plain id or any YouTube URL both work.
     details = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
 
-    print(f"Title:    {details.title}")
-    print(f"Channel:  {details.channel}")
-    print(f"Views:    {details.views}")
-    print(f"Length:   {details.length_seconds}s")
-    print(f"Live:     {details.is_live}")
-    print(f"Keywords: {', '.join(details.keywords[:5])}")
-    print(f"URL:      {details.url}")
+    print(f"Title:     {details.title}")
+    print(f"Channel:   {details.channel}")
+    print(f"Views:     {details.views}")
+    print(f"Length:    {details.length_seconds}s")
+    print(f"Published: {details.published}")
+    print(f"Category:  {details.category}")
+    print(f"Live:      {details.is_live}")
+    print(f"Keywords:  {', '.join(details.keywords[:5])}")
+    print(f"URL:       {details.url}")
 ```
 
 You can also access the full description and the channel id for further lookups:
@@ -73,9 +75,19 @@ with YouTube() as yt:
 | `length_seconds` | `int \| None`     | Duration of the video in seconds                                      |
 | `views`          | `int \| None`     | Total view count as an integer                                        |
 | `keywords`       | `tuple[str, ...]` | Tags / keywords associated with the video                             |
-| `is_live`        | `bool`            | `True` if the video is currently a live stream                        |
-| `thumbnail`      | `str \| None`     | URL of the highest-resolution available thumbnail                     |
-| `url`            | `str`             | Canonical `https://www.youtube.com/watch?v=…` URL (computed property) |
+| `is_live`              | `bool`              | `True` if the video is a live stream or live content                  |
+| `thumbnail`            | `str \| None`       | URL of the highest-resolution available thumbnail                     |
+| `published`            | `str \| None`       | ISO publish date from player microformat (e.g. `2009-10-25`)          |
+| `upload_date`          | `str \| None`       | ISO upload date                                                       |
+| `category`             | `str \| None`       | YouTube category (e.g. `Music`)                                       |
+| `owner_profile_url`    | `str \| None`       | Channel profile / vanity URL                                          |
+| `embed_url`            | `str \| None`       | Embed iframe URL                                                      |
+| `is_private`           | `bool`              | `True` if the player reports the video as private                     |
+| `is_upcoming`          | `bool`              | `True` for scheduled premieres                                        |
+| `allow_ratings`        | `bool \| None`      | Whether likes/ratings are enabled                                     |
+| `is_family_safe`       | `bool \| None`      | Family-safe flag from microformat                                     |
+| `available_countries`  | `tuple[str, ...]`   | ISO country codes where the video is available                        |
+| `url`                  | `str`               | Canonical `https://www.youtube.com/watch?v=…` URL (computed property) |
 
 !!! note
 

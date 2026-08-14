@@ -4,15 +4,33 @@
 
 ytscrape ships a built-in command-line interface that is available in two equivalent forms: as the `ytscrape` console script registered automatically when you install the package with pip, and as the `python -m ytscrape` module invocation. Both entry points share the same parser and produce identical output, so you can use whichever fits your workflow.
 
+<p align="center">
+  <img src="../../assets/demo_cli.gif" alt="ytscrape CLI demo" width="720">
+</p>
+
 ## Global options
 
-These flags apply to every subcommand and must be placed **before** the subcommand name.
+These flags apply to every subcommand and can be placed **before or after** the subcommand name (`ytscrape --format json search "python"` and `ytscrape search "python" --format json` are equivalent).
 
-| Flag         | Metavar | Default | Description                                                           |
-| ------------ | ------- | ------- | --------------------------------------------------------------------- |
-| `--language` | `HL`    | `en`    | Interface language sent as the `hl` parameter, e.g. `en`, `uk`, `de`. |
-| `--region`   | `GL`    | `US`    | Content region sent as the `gl` parameter, e.g. `US`, `UA`, `DE`.     |
-| `--version`  | —       | —       | Print the installed ytscrape version and exit.                        |
+| Flag         | Metavar | Default | Description                                                                 |
+| ------------ | ------- | ------- | --------------------------------------------------------------------------- |
+| `--language` | `HL`    | `en`    | Interface language sent as the `hl` parameter, e.g. `en`, `uk`, `de`.       |
+| `--region`   | `GL`    | `US`    | Content region sent as the `gl` parameter, e.g. `US`, `UA`, `DE`.           |
+| `--format`   | —       | `table` | `table` prints a colourful box table; `plain` keeps the old script output; `json` / `csv` export structured data. |
+| `--output` / `-o` | `FILE` | stdout | Write `json` / `csv` to a file instead of stdout. |
+| `--no-color` | —       | off     | Disable ANSI colours. Also honoured via the `NO_COLOR` environment variable. |
+| `--no-logo`  | —       | off     | Hide the mini `▶ ytscrape` wordmark (red `yt`, white `scrape`) shown above table output. |
+| `--version`  | —       | —       | Print the installed ytscrape version and exit.                              |
+
+Table mode also draws a small spinner on stderr (`⠋ searching…`) while the request is in flight. `--format plain` and non-TTY stderr skip it so scripts stay clean.
+
+Global flags (`--format`, `--output`, `--language`, …) work **before or after** the subcommand:
+
+```bash
+# Structured export (stdout or -o FILE)
+ytscrape search "python" --max 5 --format json
+ytscrape comments dQw4w9WgXcQ --max 20 --format csv -o comments.csv
+```
 
 ```bash
 # Print the installed version
@@ -26,7 +44,7 @@ ytscrape --language uk --region UA search "музика" --max 5
 
 ## `search`
 
-Search YouTube and print matching results to stdout, one per line, in the format `<title>\t<url>`.
+Search YouTube and print matching results. The default `--format table` layout is a boxed table (type, title, channel, duration, views, URL; plus published for video results) under a colourful `▶ ytscrape` wordmark. Channel rows have no publish date, so that column is omitted when the result set has no videos. The last column is the watch URL for videos or the channel URL for channels. Use `--format plain` for the old script-friendly `<title>\t<url>` lines.
 
 ```
 ytscrape search <query> [--filter FILTER] [--max N]

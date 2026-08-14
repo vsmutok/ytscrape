@@ -23,21 +23,11 @@ __all__ = [
     "parse_comments_page",
 ]
 
-# Maps a (classic) renderer key to the model responsible for parsing it.
+# Maps a renderer key to the model responsible for parsing it.
 _RENDERER_FACTORIES = {
     "videoRenderer": Video.from_renderer,
     "channelRenderer": Channel.from_renderer,
     "playlistRenderer": Playlist.from_renderer,
-}
-
-# Key used by the modern search response format.
-_LOCKUP_KEY = "lockupViewModel"
-
-# Maps a ``lockupViewModel.contentType`` to the model that parses it.
-_LOCKUP_FACTORIES = {
-    "LOCKUP_CONTENT_TYPE_VIDEO": Video.from_lockup,
-    "LOCKUP_CONTENT_TYPE_CHANNEL": Channel.from_lockup,
-    "LOCKUP_CONTENT_TYPE_PLAYLIST": Playlist.from_lockup,
 }
 
 
@@ -84,8 +74,6 @@ def iter_renderers(
             for key in _RENDERER_FACTORIES:
                 if key in node and isinstance(node[key], dict):
                     yield key, node[key]
-            if _LOCKUP_KEY in node and isinstance(node[_LOCKUP_KEY], dict):
-                yield _LOCKUP_KEY, node[_LOCKUP_KEY]
             for value in node.values():
                 yield from _walk(value)
         elif isinstance(node, list):
@@ -98,14 +86,8 @@ def iter_renderers(
 def parse_item(renderer_key: str, renderer: dict[str, Any]):
     """Build the appropriate model for ``renderer_key``.
 
-    Handles both the classic ``*Renderer`` keys and the modern
-    ``lockupViewModel`` (dispatched by its ``contentType``). Returns ``None``
-    for unknown types so callers can skip them.
+    Returns ``None`` for unknown types so callers can skip them.
     """
-    if renderer_key == _LOCKUP_KEY:
-        factory = _LOCKUP_FACTORIES.get(renderer.get("contentType", ""))
-        return factory(renderer) if factory is not None else None
-
     factory = _RENDERER_FACTORIES.get(renderer_key)
     if factory is None:
         return None

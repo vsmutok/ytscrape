@@ -58,6 +58,56 @@ Returned by `YouTube.video()`. Contains every piece of metadata available from t
 :   URL of the highest-resolution thumbnail from the player response.
 
 
+**`published`** (`str | None`)
+
+:   ISO publish date from `playerMicroformatRenderer` (e.g. `"2009-10-25"`).
+
+
+**`upload_date`** (`str | None`)
+
+:   ISO upload date. Often the same as `published`, but can differ for premieres.
+
+
+**`category`** (`str | None`)
+
+:   YouTube category label (e.g. `"Music"`).
+
+
+**`owner_profile_url`** (`str | None`)
+
+:   Channel profile / vanity URL from microformat.
+
+
+**`embed_url`** (`str | None`)
+
+:   Embed iframe URL (`https://www.youtube.com/embed/…`) when present.
+
+
+**`is_private`** (`bool`)
+
+:   `True` when the player reports the video as private.
+
+
+**`is_upcoming`** (`bool`)
+
+:   `True` for scheduled / upcoming premieres.
+
+
+**`allow_ratings`** (`bool | None`)
+
+:   Whether likes/ratings are enabled. `None` if the player omitted the flag.
+
+
+**`is_family_safe`** (`bool | None`)
+
+:   Family-safe flag from microformat. `None` when absent.
+
+
+**`available_countries`** (`tuple[str, ...]`)
+
+:   ISO 3166-1 alpha-2 country codes where the video is available.
+
+
 **`url`** (`str`)
 
 :   **Property.** The canonical watch URL: `https://www.youtube.com/watch?v={video_id}`.

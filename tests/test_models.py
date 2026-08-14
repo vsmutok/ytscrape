@@ -31,6 +31,7 @@ class TestVideoFromRenderer:
             "lengthText": {"simpleText": "3:14"},
             "viewCountText": {"simpleText": "1,234 views"},
             "publishedTimeText": {"simpleText": "2 days ago"},
+            "descriptionSnippet": {"runs": [{"text": "A short blurb"}]},
             "thumbnail": {
                 "thumbnails": [
                     {"url": "http://small.jpg"},
@@ -47,6 +48,7 @@ class TestVideoFromRenderer:
         assert video.views == "1,234 views"
         assert video.published == "2 days ago"
         assert video.thumbnail == "http://large.jpg"
+        assert video.description == "A short blurb"
 
     def test_empty_renderer_uses_defaults(self) -> None:
         video = Video.from_renderer({})
@@ -63,57 +65,6 @@ class TestVideoFromRenderer:
         }
         video = Video.from_renderer(renderer)
         assert video.channel == "By Line"
-
-
-class TestVideoFromLockup:
-    def test_video_lockup(self) -> None:
-        lockup = {
-            "contentId": "vid123",
-            "metadata": {
-                "lockupMetadataViewModel": {
-                    "title": {"content": "Lockup Title"},
-                    "metadata": {
-                        "contentMetadataViewModel": {
-                            "metadataRows": [
-                                {
-                                    "metadataParts": [
-                                        {
-                                            "text": {
-                                                "content": "Channel Name",
-                                                "commandRuns": [
-                                                    {
-                                                        "onTap": {
-                                                            "innertubeCommand": {
-                                                                "browseEndpoint": {
-                                                                    "browseId": (
-                                                                        "UCxyz"
-                                                                    )
-                                                                }
-                                                            }
-                                                        }
-                                                    }
-                                                ],
-                                            }
-                                        }
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                }
-            },
-            "contentImage": {
-                "thumbnailViewModel": {
-                    "image": {"sources": [{"url": "https://thumb.jpg"}]}
-                }
-            },
-        }
-        video = Video.from_lockup(lockup)
-        assert video.video_id == "vid123"
-        assert video.title == "Lockup Title"
-        assert video.channel == "Channel Name"
-        assert video.channel_id == "UCxyz"
-        assert video.thumbnail == "https://thumb.jpg"
 
 
 class TestChannel:
@@ -135,31 +86,6 @@ class TestChannel:
         assert channel.subscribers == "100 videos"
         assert channel.video_count == "100 videos"
         assert channel.thumbnail == "http://ch.jpg"
-
-    def test_from_lockup(self) -> None:
-        lockup = {
-            "contentId": "UCabc",
-            "metadata": {
-                "lockupMetadataViewModel": {
-                    "title": {"content": "Lockup Channel"},
-                    "metadata": {
-                        "contentMetadataViewModel": {
-                            "metadataRows": [
-                                {
-                                    "metadataParts": [
-                                        {"text": {"content": "1M subscribers"}}
-                                    ]
-                                }
-                            ]
-                        }
-                    },
-                }
-            },
-        }
-        channel = Channel.from_lockup(lockup)
-        assert channel.channel_id == "UCabc"
-        assert channel.title == "Lockup Channel"
-        assert channel.subscribers == "1M subscribers"
 
 
 class TestPlaylist:
@@ -201,8 +127,22 @@ class TestVideoDetails:
                 "viewCount": "9999",
                 "keywords": ["a", "b"],
                 "isLiveContent": True,
+                "isPrivate": False,
+                "isUpcoming": False,
+                "allowRatings": True,
                 "thumbnail": {"thumbnails": [{"url": "http://t.jpg"}]},
-            }
+            },
+            "microformat": {
+                "playerMicroformatRenderer": {
+                    "publishDate": "2009-10-25",
+                    "uploadDate": "2009-10-24",
+                    "category": "Music",
+                    "ownerProfileUrl": "http://www.youtube.com/@author",
+                    "isFamilySafe": True,
+                    "availableCountries": ["US", "UA"],
+                    "embed": {"iframeUrl": "https://www.youtube.com/embed/vid"},
+                }
+            },
         }
         details = VideoDetails.from_player_response(data)
         assert details.video_id == "vid"
@@ -215,6 +155,14 @@ class TestVideoDetails:
         assert details.keywords == ("a", "b")
         assert details.is_live is True
         assert details.thumbnail == "http://t.jpg"
+        assert details.published == "2009-10-25"
+        assert details.upload_date == "2009-10-24"
+        assert details.category == "Music"
+        assert details.owner_profile_url == "http://www.youtube.com/@author"
+        assert details.embed_url == "https://www.youtube.com/embed/vid"
+        assert details.allow_ratings is True
+        assert details.is_family_safe is True
+        assert details.available_countries == ("US", "UA")
 
     def test_from_player_response_invalid_numbers(self) -> None:
         data = {

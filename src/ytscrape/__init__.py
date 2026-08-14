@@ -41,6 +41,7 @@ from .exceptions import (
     TranscriptsDisabled,
     YtScraperError,
 )
+from .export import dump_csv, dump_json, dumps_csv, dumps_json, to_dict
 from .filters import CommentSort, SearchFilter
 from .locale import Country, Language, Locale
 from .models import Channel, ChannelDetails, Comment, Playlist, Video, VideoDetails
@@ -68,6 +69,11 @@ __all__ = [
     "VideoDetails",
     "ChannelDetails",
     "Comment",
+    "to_dict",
+    "dumps_json",
+    "dumps_csv",
+    "dump_json",
+    "dump_csv",
     "Transcript",
     "TranscriptSnippet",
     "TranscriptTrack",

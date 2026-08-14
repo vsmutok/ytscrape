@@ -29,6 +29,7 @@ from .exceptions import (
     YtScraperError,
     with_block_mitigation,
 )
+from .export import Exportable
 
 __all__ = [
     "TranscriptSnippet",
@@ -56,7 +57,7 @@ _FORMATTING_TAGS = (
 
 
 @dataclass(frozen=True, slots=True)
-class TranscriptSnippet:
+class TranscriptSnippet(Exportable):
     """One timed caption line."""
 
     text: str
@@ -67,7 +68,7 @@ class TranscriptSnippet:
 
 
 @dataclass(frozen=True, slots=True)
-class Transcript:
+class Transcript(Exportable):
     """A fully fetched transcript for a video."""
 
     snippets: tuple[TranscriptSnippet, ...]
@@ -104,7 +105,7 @@ class _TranslationLanguage:
 
 
 @dataclass(slots=True)
-class TranscriptTrack:
+class TranscriptTrack(Exportable):
     """Metadata for one available caption track (not yet downloaded)."""
 
     video_id: str
@@ -203,7 +204,7 @@ class TranscriptTrack:
         return f'{self.language_code} ("{self.language}"){tag}{tr}'
 
 
-class TranscriptList:
+class TranscriptList(Exportable):
     """Available caption tracks for one video."""
 
     def __init__(

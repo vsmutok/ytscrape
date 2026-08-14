@@ -48,6 +48,11 @@ Represents a single video result from a search query.
 :   URL of the highest-resolution thumbnail available in the search response.
 
 
+**`description`** (`str | None`)
+
+:   Short description snippet from `videoRenderer.descriptionSnippet`.
+
+
 **`url`** (`str`)
 
 :   **Property.** The canonical watch URL constructed from `video_id`: `https://www.youtube.com/watch?v={video_id}`.
