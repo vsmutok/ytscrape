@@ -5,6 +5,42 @@ All notable changes to **ytscrape** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-08-14
+
+### Changed
+
+- CLI wordmark matches the brand logo: red `yt`, white `scrape`.
+- CLI `--format` / `--output` / `--language` / `--region` work after the
+  subcommand as well (`ytscrape search "JS" --format csv`).
+- Search parsing uses only classic InnerTube renderers
+  (`videoRenderer` / `channelRenderer` / `playlistRenderer`).
+  `lockupViewModel` helpers and `from_lockup` factories are gone.
+
+### Added
+
+- Brand assets under `docs/assets/`: `ytscrape` wordmark in the README header
+  and on the docs home page, the icon as the docs-site logo / favicon, and an
+  animated CLI demo GIF in the README (CLI cheatsheet) and the CLI overview page.
+- JSON / CSV export: models have `to_dict()` / `to_json()` / `to_csv()`
+  (and `dump_json` / `dump_csv`). Collections use `dumps_json` /
+  `dumps_csv`. CLI: `--format json|csv` and `--output FILE`.
+- Colourful CLI: mini `▶ ytscrape` wordmark, boxed tables for search /
+  video / channel / comments / transcripts. `--format plain` keeps the
+  old TSV / key-value output; `--no-color` / `NO_COLOR` disable ANSI.
+  Search tables omit the unused `Published` column when results are
+  channels (or other non-video items). Table columns stay aligned when
+  titles contain emoji or other wide characters (♥ stays single-width;
+  emoji presentation such as ❤️ is double-width). Newlines in comments
+  are flattened so they cannot break a table row. Search tables include a
+  `URL` column for video watch links and channel pages. Table mode shows
+  a braille spinner on stderr while a request is in flight.
+- Richer video metadata: search `Video` fills `duration` / `views` /
+  `published` / `description` from classic `videoRenderer` fields
+  (`lengthText`, `viewCountText`, `publishedTimeText`, `descriptionSnippet`).
+- `VideoDetails` now also reads player microformat: `published`,
+  `upload_date`, `category`, `owner_profile_url`, `embed_url`, `is_private`,
+  `is_upcoming`, `allow_ratings`, `is_family_safe`, `available_countries`.
+
 ## [0.1.5] - 2026-08-11
 
 ### Added
