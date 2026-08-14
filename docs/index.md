@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="assets/logo_text_with_bg.png" alt="ytscrape" width="520">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/logo_text_dark.png">
+    <img class="ytscrape-wordmark" src="assets/logo_text.png" alt="ytscrape" width="520">
+  </picture>
 </p>
 
 # ytscrape — Free Open-Source Python YouTube Scraper

@@ -18,9 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Brand assets under `docs/assets/`: `ytscrape` wordmark in the README header
-  and on the docs home page, the icon as the docs-site logo / favicon, and an
-  animated CLI demo GIF in the README (CLI cheatsheet) and the CLI overview page.
+- Brand assets under `docs/assets/`: light/dark `ytscrape` wordmarks in the
+  README header and on the docs home page, matching light/dark icons as the
+  docs-site logo / favicon, and an animated CLI demo GIF in the README
+  (CLI cheatsheet) and the CLI overview page.
 - JSON / CSV export: models have `to_dict()` / `to_json()` / `to_csv()`
   (and `dump_json` / `dump_csv`). Collections use `dumps_json` /
   `dumps_csv`. CLI: `--format json|csv` and `--output FILE`.

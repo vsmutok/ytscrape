@@ -1,0 +1,10 @@
+/* Header / drawer icon: light logo on dark scheme */
+[data-md-color-scheme="slate"] .md-header__button.md-logo img,
+[data-md-color-scheme="slate"] .md-nav__title .md-nav__button.md-logo img {
+  content: url("logo_dark.png");
+}
+
+/* Home wordmark: dark-on-light vs light-on-dark */
+[data-md-color-scheme="slate"] .ytscrape-wordmark {
+  content: url("logo_text_dark.png");
+}

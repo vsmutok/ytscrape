@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text_with_bg.png" alt="ytscrape" width="520">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text_dark.png">
+    <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/logo_text.png" alt="ytscrape" width="520">
+  </picture>
 </p>
 
 # ytscrape — Free YouTube Scraper for Python
