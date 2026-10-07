@@ -47,6 +47,24 @@ Sync (`YouTube`) and async (`AsyncYouTube`) share the same surface.
 > ⚠️ This library uses YouTube's private endpoints. Use it responsibly and at
 > your own risk — the endpoints may change over time.
 
+## CLI demo
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/demo_cli.gif" alt="ytscrape CLI demo" width="720">
+</p>
+
+The CLI prints colourful boxed tables under a mini `▶ ytscrape` wordmark, with a
+spinner while requests are in flight:
+
+```bash
+ytscrape search "python tutorial" --filter videos --max 10
+ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
+ytscrape channel @RickAstleyYT
+ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
+```
+
+`python -m ytscrape …` works too. See the [full CLI guide](https://vsmutok.github.io/ytscrape/cli/overview/) for more.
+
 ## What can you scrape from YouTube?
 
 | Data | Method | CLI |
@@ -154,16 +172,18 @@ asyncio.run(main())
 
 ## ytscrape vs. the alternatives
 
-| | **ytscrape** | YouTube Data API | `yt-dlp` | Browser automation |
-| ---------------------- | :----------: | :--------------: | :------: | :----------------: |
-| API key required       |      ❌      |        ✅        |    ❌    |         ❌         |
-| Daily quota            |      ❌      |        ✅        |    ❌    |         ❌         |
-| Browser / driver needed|      ❌      |        ❌        |    ❌    |         ✅         |
-| Search / metadata / comments | ✅ | ✅ | ✅ | ✅ |
-| Typed Python models    |      ✅      |        ❌        |    ❌    |         ❌         |
-| Async (`asyncio`) API  |      ✅      |        ❌        |    ❌    |       varies       |
-| Downloads media        |      ❌      |        ❌        |    ✅    |         ✅         |
-| Install size           |    tiny      |     medium       |  large   |       huge         |
+See the [**Migration Guide from scrapetube**](MIGRATION_FROM_SCRAPETUBE.md) for a detailed comparison and code examples.
+
+| | **ytscrape** | `scrapetube` | YouTube Data API | `yt-dlp` | Browser automation |
+| ---------------------- | :----------: | :----------: | :--------------: | :------: | :----------------: |
+| API key required       |      ❌      |      ❌      |        ✅        |    ❌    |         ❌         |
+| Comments & Replies     |      ✅      |      ❌      |        ✅        |    ✅    |         ✅         |
+| Transcripts / Captions |      ✅      |      ❌      |        ✅        |    ✅    |         ✅         |
+| Typed Python models    |      ✅      |      ❌      |        ❌        |    ❌    |         ❌         |
+| Async (`asyncio`) API  |      ✅      |      ❌      |        ❌        |    ❌    |       varies       |
+| Metadata (views, date) |      ✅      |   partial    |        ✅        |    ✅    |         ✅         |
+| Browser needed         |      ❌      |      ❌      |        ❌        |    ❌    |         ✅         |
+| Install size           |    tiny      |     tiny     |     medium       |  large   |       huge         |
 
 
 ## How it works
@@ -204,25 +224,6 @@ Deep dives live on the docs site (not duplicated here):
 | API reference | [API](https://vsmutok.github.io/ytscrape/api/youtube/) |
 | Examples (sync + async) | [`examples/`](examples/) |
 
-### CLI cheatsheet
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/vsmutok/ytscrape/main/docs/assets/demo_cli.gif" alt="ytscrape CLI demo" width="720">
-</p>
-
-The CLI prints colourful boxed tables under a mini `▶ ytscrape` wordmark, with a
-spinner while requests are in flight:
-
-```bash
-ytscrape search "python tutorial" --filter videos --max 10
-ytscrape --language uk --region UA search "музика" --max 10
-ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
-ytscrape channel @RickAstleyYT
-ytscrape transcript dQw4w9WgXcQ --lang en
-ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
-```
-
-`python -m ytscrape …` works too. Pass `--max 0` to `comments` for no limit.
 
 ## FAQ
 
@@ -309,4 +310,4 @@ uv run pre-commit run --all-files
 youtube scraping, youtube comments scraper, youtube transcript downloader,
 youtube search api python, youtube data api alternative, youtube api without
 key, innertube api, youtube metadata extractor, youtube channel scraper,
-youtube crawler, youtube shorts scraper, async youtube scraper.</sub>
+youtube crawler, youtube shorts scraper, async youtube scraper, scrapetube alternative.</sub>
