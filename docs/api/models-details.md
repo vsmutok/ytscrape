@@ -64,7 +64,7 @@ Returned by `YouTube.video()`. Contains every piece of metadata available from t
 
 **`published_at`** / **`uploaded_at`** (`datetime | None`)
 
-:   Parsed datetimes of `published` / `upload_date` (new in 2.0).
+:   Parsed timezone-aware datetimes of `published` / `upload_date` (new in 2.0). `published_at` is the video's publication date; it is `None` for scheduled videos (see `scheduled_at`).
 
 **`thumbnails`** (`tuple[Thumbnail, ...]`)
 
@@ -72,7 +72,7 @@ Returned by `YouTube.video()`. Contains every piece of metadata available from t
 
 **`published`** (`str | None`)
 
-:   ISO publish date from `playerMicroformatRenderer` (e.g. `"2009-10-25"`).
+:   ISO publish date from `playerMicroformatRenderer` (e.g. `"2009-10-25"`), falling back to `uploadDate`. `None` for scheduled (upcoming) videos that are not published yet.
 
 
 **`upload_date`** (`str | None`)
@@ -103,6 +103,11 @@ Returned by `YouTube.video()`. Contains every piece of metadata available from t
 **`is_upcoming`** (`bool`)
 
 :   `True` for scheduled / upcoming premieres.
+
+
+**`scheduled_at`** (`datetime | None`)
+
+:   Planned start time of a scheduled premiere / live stream (`liveBroadcastDetails.startTimestamp`). `None` for already published videos.
 
 
 **`allow_ratings`** (`bool | None`)

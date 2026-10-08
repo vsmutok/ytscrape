@@ -298,6 +298,46 @@ class TestVideoDetails:
         assert details.is_family_safe is True
         assert details.available_countries == ("US", "UA")
 
+    def test_from_player_response_publish_date_fallback(self) -> None:
+        data = {
+            "videoDetails": {"videoId": "vid"},
+            "microformat": {
+                "playerMicroformatRenderer": {"uploadDate": "2024-01-02T03:04:05-08:00"}
+            },
+        }
+        details = VideoDetails.from_player_response(data)
+        assert details.published == "2024-01-02T03:04:05-08:00"
+        assert details.published_at == datetime(
+            2024, 1, 2, 11, 4, 5, tzinfo=timezone.utc
+        )
+        assert details.scheduled_at is None
+
+    def test_from_player_response_scheduled_video(self) -> None:
+        data = {
+            "videoDetails": {"videoId": "vid", "isUpcoming": True},
+            "microformat": {
+                "playerMicroformatRenderer": {
+                    "publishDate": "2030-05-01T18:00:00-07:00",
+                    "uploadDate": "2030-04-20T10:00:00-07:00",
+                    "liveBroadcastDetails": {
+                        "isLiveNow": False,
+                        "startTimestamp": "2030-05-01T18:00:00-07:00",
+                    },
+                }
+            },
+        }
+        details = VideoDetails.from_player_response(data)
+        assert details.is_upcoming is True
+        assert details.published is None
+        assert details.published_at is None
+        assert details.scheduled_at == datetime(2030, 5, 2, 1, 0, tzinfo=timezone.utc)
+
+    def test_from_player_response_no_publish_date(self) -> None:
+        details = VideoDetails.from_player_response({"videoDetails": {"videoId": "v"}})
+        assert details.published is None
+        assert details.published_at is None
+        assert details.scheduled_at is None
+
     def test_from_player_response_invalid_numbers(self) -> None:
         data = {
             "videoDetails": {

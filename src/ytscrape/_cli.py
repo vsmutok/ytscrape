@@ -308,6 +308,7 @@ def video_pairs(d: VideoDetails) -> list[tuple[str, Any]]:
         ("Live", d.is_live),
         ("Private", d.is_private),
         ("Upcoming", d.is_upcoming),
+        ("Scheduled", d.scheduled_at.isoformat() if d.scheduled_at else None),
         ("Family safe", d.is_family_safe),
         ("Ratings", d.allow_ratings),
         ("Keywords", ", ".join(d.keywords[:8]) if d.keywords else None),
