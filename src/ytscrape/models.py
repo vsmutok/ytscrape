@@ -404,6 +404,7 @@ class VideoDetails(Exportable):
     embed_url: str | None = None
     is_private: bool = False
     is_upcoming: bool = False
+    scheduled_at: datetime | None = None
     allow_ratings: bool | None = None
     is_family_safe: bool | None = None
     available_countries: tuple[str, ...] = field(default_factory=tuple)
@@ -463,6 +464,23 @@ class VideoDetails(Exportable):
         embed = micro.get("embed") if isinstance(micro.get("embed"), dict) else {}
         embed_url = embed.get("iframeUrl") if isinstance(embed, dict) else None
 
+        broadcast = micro.get("liveBroadcastDetails")
+        if not isinstance(broadcast, dict):
+            broadcast = {}
+        is_upcoming = bool(details.get("isUpcoming", False))
+        scheduled_at = (
+            parse_date(broadcast.get("startTimestamp")) if is_upcoming else None
+        )
+
+        # Scheduled (upcoming) videos are not published yet: YouTube reports
+        # the planned start as ``publishDate``, so expose it as ``scheduled_at``
+        # and leave the publication date empty.
+        published = None
+        if not is_upcoming:
+            published = micro.get("publishDate") or micro.get("uploadDate")
+            if not isinstance(published, str) or not published.strip():
+                published = None
+
         return cls(
             video_id=details.get("videoId") or micro.get("externalVideoId") or "",
             title=details.get("title") or _text(micro.get("title")),
@@ -482,17 +500,16 @@ class VideoDetails(Exportable):
             or _thumbnail(micro.get("thumbnail")),
             thumbnails=_thumbnails(details.get("thumbnail"))
             or _thumbnails(micro.get("thumbnail")),
-            published=micro.get("publishDate") or micro.get("uploadDate"),
-            published_at=parse_date(
-                micro.get("publishDate") or micro.get("uploadDate")
-            ),
+            published=published,
+            published_at=parse_date(published),
             upload_date=micro.get("uploadDate"),
             uploaded_at=parse_date(micro.get("uploadDate")),
             category=micro.get("category"),
             owner_profile_url=micro.get("ownerProfileUrl"),
             embed_url=embed_url if isinstance(embed_url, str) else None,
             is_private=bool(details.get("isPrivate", False)),
-            is_upcoming=bool(details.get("isUpcoming", False)),
+            is_upcoming=is_upcoming,
+            scheduled_at=scheduled_at,
             allow_ratings=_bool_or_none(details.get("allowRatings")),
             is_family_safe=_bool_or_none(micro.get("isFamilySafe")),
             available_countries=tuple(c for c in countries if isinstance(c, str)),

@@ -220,6 +220,32 @@ class TestNext:
         assert "videoId" not in payload
 
 
+class TestProxies:
+    def test_proxies_applied_to_session(self) -> None:
+        proxies = {"https": "http://user:pass@proxy:8080"}
+        client = InnerTubeClient(proxies=proxies)
+        assert client.proxies == proxies
+
+    def test_proxies_default_empty(self) -> None:
+        client = InnerTubeClient()
+        assert client.proxies == {}
+
+    def test_proxies_applied_to_injected_session(self) -> None:
+        session = requests.Session()
+        InnerTubeClient(session=session, proxies={"http": "http://proxy:3128"})
+        assert session.proxies["http"] == "http://proxy:3128"
+
+    def test_proxies_rotation_via_setter(self) -> None:
+        client = InnerTubeClient(proxies={"https": "http://a:1"})
+        client.proxies = {"https": "http://b:2"}
+        assert client.proxies == {"https": "http://b:2"}
+
+    def test_proxies_cleared_with_none(self) -> None:
+        client = InnerTubeClient(proxies={"https": "http://a:1"})
+        client.proxies = None
+        assert client.proxies == {}
+
+
 class TestLifecycle:
     def test_close_closes_session(self) -> None:
         session = FakeSession()

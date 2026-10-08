@@ -366,6 +366,22 @@ class TestYouTubeLifecycle:
         assert client.closed is True
 
 
+class TestYouTubeProxies:
+    def test_proxies_forwarded_to_default_client(self) -> None:
+        proxies = {"https": "http://user:pass@proxy:8080"}
+        yt = YouTube(proxies=proxies)
+        assert yt.proxies == proxies
+
+    def test_proxies_default_empty(self) -> None:
+        yt = YouTube()
+        assert yt.proxies == {}
+
+    def test_proxies_rotation_via_setter(self) -> None:
+        yt = YouTube(proxies={"https": "http://a:1"})
+        yt.proxies = {"https": "http://b:2"}
+        assert yt.proxies == {"https": "http://b:2"}
+
+
 class TestNavigationHelpers:
     def test_search_items_are_bound(self) -> None:
         class IdClient(FakeClient):

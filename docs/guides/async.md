@@ -185,7 +185,25 @@ async with AsyncYouTube() as yt:
 
 ## Proxies and custom httpx clients
 
-Inject a preconfigured `httpx.AsyncClient` via `AsyncInnerTubeClient`:
+The simplest option is the built-in `proxies` argument — pass a `requests`-style
+mapping to `AsyncYouTube` and it is wired into the underlying `httpx` client:
+
+```python
+from ytscrape import AsyncYouTube
+
+proxy = {"https": "http://user:pass@proxy:8080"}
+
+async with AsyncYouTube(proxies=proxy) as yt:
+    details = await yt.video("dQw4w9WgXcQ")
+    print(details.title)
+```
+
+!!! note
+
+    On the async client the proxy is baked into the `httpx` transport at
+    construction time, so rotating proxies means building a fresh
+    `AsyncYouTube` (the runtime `proxies` setter is sync-only). For full control
+    you can inject a preconfigured `httpx.AsyncClient` via `AsyncInnerTubeClient`:
 
 ```python
 import httpx

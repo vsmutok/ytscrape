@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from urllib.parse import parse_qs, urlparse
 
 from . import parsing
@@ -66,6 +67,11 @@ class YouTube:
             Accepts a :class:`~ytscrape.locale.Country` or a raw ISO 3166-1
             alpha-2 code. Ignored when ``locale`` is provided.
         timeout: Per-request timeout (seconds) when building a default client.
+        proxies: Optional ``requests``-style proxy mapping used when building a
+            default client, e.g. ``{"https": "http://user:pass@host:8080"}``.
+            Routes every request through the proxy. You can rotate proxies at
+            runtime by assigning to the :attr:`proxies` property (useful after
+            a :class:`~ytscrape.exceptions.BotDetected` error).
     """
 
     def __init__(
@@ -76,6 +82,7 @@ class YouTube:
         language: Language | str = "en",
         region: Country | str = "US",
         timeout: float = 30.0,
+        proxies: Mapping[str, str] | None = None,
         retry: RetryPolicy | None = None,
         min_interval: float = 0.0,
         rate_limiter: RateLimiter | None = None,
@@ -86,6 +93,7 @@ class YouTube:
             language=language,
             region=region,
             timeout=timeout,
+            proxies=proxies,
             retry=retry,
             min_interval=min_interval,
             rate_limiter=rate_limiter,
@@ -101,6 +109,20 @@ class YouTube:
     def locale(self) -> Locale:
         """The :class:`~ytscrape.locale.Locale` used for requests."""
         return self._client.locale
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        """The proxy mapping routing requests of the underlying client.
+
+        Assign a new mapping to rotate proxies at runtime (e.g. after a
+        :class:`~ytscrape.exceptions.BotDetected` error); pass ``None`` or an
+        empty mapping to clear it.
+        """
+        return self._client.proxies
+
+    @proxies.setter
+    def proxies(self, value: Mapping[str, str] | None) -> None:
+        self._client.proxies = value
 
     def search(
         self,

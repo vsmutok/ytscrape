@@ -81,8 +81,8 @@ with YouTube() as yt:
 | `keywords`       | `tuple[str, ...]` | Tags / keywords associated with the video                             |
 | `is_live`              | `bool`              | `True` if the video is a live stream or live content                  |
 | `thumbnail`            | `str \| None`       | URL of the highest-resolution available thumbnail                     |
-| `published`            | `str \| None`       | ISO publish date from player microformat (e.g. `2009-10-25`)          |
-| `published_at`         | `datetime \| None`  | Parsed publish datetime                                               |
+| `published`            | `str \| None`       | ISO publish date from player microformat (e.g. `2009-10-25`); `None` for scheduled videos |
+| `published_at`         | `datetime \| None`  | Parsed publish datetime (timezone-aware); `None` for scheduled videos |
 | `uploaded_at`          | `datetime \| None`  | Parsed upload datetime                                                |
 | `thumbnails`           | `tuple[Thumbnail, ...]` | All thumbnail sizes                                               |
 | `upload_date`          | `str \| None`       | ISO upload date                                                       |
@@ -90,11 +90,25 @@ with YouTube() as yt:
 | `owner_profile_url`    | `str \| None`       | Channel profile / vanity URL                                          |
 | `embed_url`            | `str \| None`       | Embed iframe URL                                                      |
 | `is_private`           | `bool`              | `True` if the player reports the video as private                     |
-| `is_upcoming`          | `bool`              | `True` for scheduled premieres                                        |
+| `is_upcoming`          | `bool`              | `True` for scheduled premieres / upcoming live streams                |
+| `scheduled_at`         | `datetime \| None`  | Planned start time of a scheduled video (`None` otherwise)           |
 | `allow_ratings`        | `bool \| None`      | Whether likes/ratings are enabled                                     |
 | `is_family_safe`       | `bool \| None`      | Family-safe flag from microformat                                     |
 | `available_countries`  | `tuple[str, ...]`   | ISO country codes where the video is available                        |
 | `url`                  | `str`               | Canonical `https://www.youtube.com/watch?v=…` URL (computed property) |
+
+## Publication date
+
+`published_at` is the video's publication date as a timezone-aware `datetime` (`published` keeps the raw ISO string). Videos that are not published yet — scheduled premieres and upcoming live streams — return `None`; their planned start time is available as `scheduled_at` instead:
+
+```python
+with YouTube() as yt:
+    details = yt.video("dQw4w9WgXcQ")
+    if details.published_at is not None:
+        print(f"Published on {details.published_at:%Y-%m-%d}")
+    elif details.is_upcoming:
+        print(f"Scheduled for {details.scheduled_at}")
+```
 
 !!! note
 

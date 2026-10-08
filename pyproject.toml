@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "ytscrape"
-version = "2.0.0"
+version = "2.1.0"
 description = "Fast YouTube scraper for Python — scrape search results, video and channel metadata, comments, replies and transcripts via the InnerTube API. No API key, no quota, no browser."
 readme = "README.md"
 license = { file = "LICENSE" }

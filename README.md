@@ -70,7 +70,7 @@ ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
 | Data | Method | CLI |
 | ---- | ------ | --- |
 | 🔎 YouTube search results (videos, channels, playlists, Shorts, movies) | `yt.search()` | `ytscrape search` |
-| 🎬 Video metadata (title, channel, views, duration, description) | `yt.video()` | `ytscrape video` |
+| 🎬 Video metadata (title, channel, views, duration, publication date, description) | `yt.video()` | `ytscrape video` |
 | 📺 Channel info (subscribers, handle, links, join date) | `yt.channel()` | `ytscrape channel` |
 | 💬 Comments **and replies** (every comment, not only "Top") | `yt.comments()` | `ytscrape comments` |
 | 📝 Transcripts / subtitles / captions | `yt.transcript()` | `ytscrape transcript` |
@@ -251,8 +251,16 @@ YouTube abbreviates large counts (`1.2K`). The raw string is always in
 <details>
 <summary><b>Can I use a proxy?</b></summary>
 
-Yes — inject your own `requests.Session` into `InnerTubeClient`, or
-`httpx.AsyncClient` into `AsyncInnerTubeClient`. See the
+Yes — pass a `requests`-style mapping to `YouTube` (or `AsyncYouTube`):
+
+```python
+proxy = {"https": "http://user:pass@proxy:8080"}
+details = YouTube(proxies=proxy).video("dQw4w9WgXcQ")
+```
+
+Rotate proxies at runtime (e.g. after a `BotDetected` error) by assigning to
+`yt.proxies`. For finer control you can still inject your own `requests.Session`
+/ `httpx.AsyncClient`. See the
 [advanced guide](https://vsmutok.github.io/ytscrape/guides/advanced/).
 </details>
 

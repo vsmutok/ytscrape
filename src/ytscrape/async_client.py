@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import time
+from collections.abc import Mapping
 from typing import Any
 
 from .client import (
@@ -55,6 +56,22 @@ def _require_httpx() -> Any:
     return httpx
 
 
+def _proxies_to_mounts(httpx: Any, proxies: Mapping[str, str]) -> dict[str, Any]:
+    """Convert a ``requests``-style proxy mapping to ``httpx`` mounts.
+
+    ``httpx`` 0.28 dropped the ``proxies=`` argument in favour of ``mounts``.
+    Keys such as ``"http"`` / ``"https"`` / ``"all"`` are normalised to the
+    ``"<scheme>://"`` form expected by :class:`httpx.AsyncClient`.
+    """
+    mounts: dict[str, Any] = {}
+    for scheme, url in proxies.items():
+        if not url:
+            continue
+        key = scheme if scheme.endswith("://") else f"{scheme}://"
+        mounts[key] = httpx.AsyncHTTPTransport(proxy=url)
+    return mounts
+
+
 class AsyncInnerTubeClient:
     """Async InnerTube client backed by :class:`httpx.AsyncClient`.
 
@@ -67,6 +84,9 @@ class AsyncInnerTubeClient:
         language: ``hl`` when ``locale`` is omitted.
         region: ``gl`` when ``locale`` is omitted.
         extractor: Strategy used to parse the InnerTube context from HTML.
+        proxies: Optional ``requests``-style proxy mapping, e.g.
+            ``{"https": "http://user:pass@host:8080"}``. Applied only when this
+            client creates its own session (ignored when ``session`` is given).
         max_concurrency: Maximum number of in-flight HTTP requests.
         max_retries: Extra attempts after the first failure for retryable
             status codes and transport errors.
@@ -91,6 +111,7 @@ class AsyncInnerTubeClient:
         language: Language | str = "en",
         region: Country | str = "US",
         extractor: ContextExtractor | None = None,
+        proxies: Mapping[str, str] | None = None,
         max_concurrency: int = 8,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
@@ -101,9 +122,11 @@ class AsyncInnerTubeClient:
     ) -> None:
         httpx = _require_httpx()
         self._owns_session = session is None
+        self._proxies = dict(proxies) if proxies else {}
         self._session = session or httpx.AsyncClient(
             timeout=timeout,
             follow_redirects=True,
+            mounts=_proxies_to_mounts(httpx, self._proxies),
         )
         self._user_agent = user_agent
         self._timeout = timeout
@@ -122,6 +145,15 @@ class AsyncInnerTubeClient:
         )
         self._max_concurrency = max_concurrency
         self._semaphore = asyncio.Semaphore(max_concurrency)
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        """The proxy mapping applied when this client created its own session.
+
+        Read-only: ``httpx`` bakes proxies into the transport at construction
+        time, so rotating them requires building a new client/session.
+        """
+        return dict(self._proxies)
 
     @property
     def retry_policy(self) -> RetryPolicy:
