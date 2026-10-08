@@ -5,6 +5,24 @@ All notable changes to **ytscrape** will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] — 2026-10-08
+
+### Added
+
+- `VideoDetails.scheduled_at`: planned start time of scheduled premieres /
+  upcoming live streams; shown as `Scheduled` in `ytscrape video` (#16).
+- First-class proxy support: new `proxies` argument on `YouTube`,
+  `AsyncYouTube`, `InnerTubeClient` and `AsyncInnerTubeClient` accepting a
+  `requests`-style mapping (e.g. `{"https": "http://user:pass@host:8080"}`).
+  The sync clients expose a settable `proxies` property for rotating proxies at
+  runtime (e.g. after a `BotDetected` error) (#17).
+
+### Changed
+
+- `VideoDetails.published` / `published_at` (the publication date) are now
+  `None` for scheduled videos that are not published yet, instead of the
+  planned start time (#16). Docs and README highlight the publication date.
+
 ## [2.0.0] — 2026-10-02
 
 ### Added

@@ -69,7 +69,7 @@ from .youtube import YouTube
 
 _logging.getLogger("ytscrape").addHandler(_logging.NullHandler())
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 __all__ = [
     "AgeRestricted",
