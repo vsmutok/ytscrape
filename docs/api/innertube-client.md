@@ -62,6 +62,7 @@ InnerTubeClient(
     language: Language | str = "en",
     region: Country | str = "US",
     extractor: ContextExtractor | None = None,
+    proxies: Mapping[str, str] | None = None,
 )
 ```
 
@@ -117,6 +118,14 @@ All arguments are keyword-only.
       script format.
 
 
+**`proxies`** (`Mapping[str, str] | None`)
+
+:   An optional `requests`-style proxy mapping applied to the session, e.g.
+      `{"https": "http://user:pass@host:8080"}` or a mapping with both `"http"` and `"https"` keys.
+      Also settable at runtime through the [`proxies`](#proxies) property to rotate proxies (for
+      example after a `BotDetected` error).
+
+
 ***
 
 ## Properties
@@ -130,6 +139,19 @@ def locale(self) -> Locale
 
 The [`Locale`](locale.md) (language + country pair) used for all requests. Set at construction
 time from either the `locale` argument or the `language` / `region` pair.
+
+### `proxies`
+
+```python
+@property
+def proxies(self) -> dict[str, str]
+
+@proxies.setter
+def proxies(self, value: Mapping[str, str] | None) -> None
+```
+
+The proxy mapping applied to the underlying session. Assign a new mapping to rotate proxies at
+runtime (e.g. after a `BotDetected` error); assign `None` or an empty mapping to clear it.
 
 ### `context`
 

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 from urllib.parse import urlparse
 
 from . import parsing
@@ -62,6 +63,8 @@ class AsyncYouTube:
         language: ``hl`` when ``locale`` is omitted.
         region: ``gl`` when ``locale`` is omitted.
         timeout: Per-request timeout for the default client.
+        proxies: Optional ``requests``-style proxy mapping used when building a
+            default client, e.g. ``{"https": "http://user:pass@host:8080"}``.
         max_concurrency: Cap on concurrent HTTP requests (default client only).
         max_retries: Retry budget for transient failures (default client only).
         backoff_factor: Base delay for exponential backoff (default client only).
@@ -75,6 +78,7 @@ class AsyncYouTube:
         language: Language | str = "en",
         region: Country | str = "US",
         timeout: float = 30.0,
+        proxies: Mapping[str, str] | None = None,
         max_concurrency: int = 8,
         max_retries: int = 3,
         backoff_factor: float = 0.5,
@@ -88,6 +92,7 @@ class AsyncYouTube:
             language=language,
             region=region,
             timeout=timeout,
+            proxies=proxies,
             max_concurrency=max_concurrency,
             max_retries=max_retries,
             backoff_factor=backoff_factor,
@@ -106,6 +111,11 @@ class AsyncYouTube:
     def locale(self) -> Locale:
         """The :class:`~ytscrape.locale.Locale` used for requests."""
         return self._client.locale
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        """The proxy mapping routing requests of the underlying client."""
+        return self._client.proxies
 
     async def search(
         self,

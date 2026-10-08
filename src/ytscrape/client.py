@@ -14,6 +14,7 @@ import logging
 import secrets
 import threading
 import time
+from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
@@ -281,6 +282,12 @@ class InnerTubeClient:
             code. Ignored when ``locale`` is provided.
         extractor: Strategy object used to parse the InnerTube context out of
             the YouTube home page.
+        proxies: Optional ``requests``-style proxy mapping, e.g.
+            ``{"https": "http://user:pass@host:8080"}`` or
+            ``{"http": "http://host:port", "https": "http://host:port"}``.
+            Applied to the underlying session. You can also rotate proxies at
+            runtime by assigning to the :attr:`proxies` property (handy after a
+            :class:`~ytscrape.exceptions.BotDetected` error).
         retry: :class:`RetryPolicy` for 429 / 5xx / connection errors.
             Defaults to ``RetryPolicy()``; pass ``RetryPolicy.disabled()``
             to turn retries off.
@@ -304,12 +311,15 @@ class InnerTubeClient:
         language: Language | str = "en",
         region: Country | str = "US",
         extractor: ContextExtractor | None = None,
+        proxies: Mapping[str, str] | None = None,
         retry: RetryPolicy | None = None,
         rate_limiter: RateLimiter | None = None,
         min_interval: float = 0.0,
         context_cache: ContextCache | bool | None = None,
     ) -> None:
         self._session = session or requests.Session()
+        if proxies is not None:
+            self._session.proxies.update(proxies)
         self._user_agent = user_agent
         self._timeout = timeout
         self._locale = locale or Locale.of(language=language, country=region)
@@ -320,6 +330,22 @@ class InnerTubeClient:
         self._context_cache = resolve_context_cache(
             context_cache, owns_session=session is None
         )
+
+    @property
+    def proxies(self) -> dict[str, str]:
+        """The proxy mapping applied to the underlying session.
+
+        Assign a new mapping to rotate proxies at runtime (e.g. after a
+        :class:`~ytscrape.exceptions.BotDetected` error); pass ``None`` or an
+        empty mapping to clear the proxy configuration.
+        """
+        return dict(self._session.proxies)
+
+    @proxies.setter
+    def proxies(self, value: Mapping[str, str] | None) -> None:
+        self._session.proxies.clear()
+        if value:
+            self._session.proxies.update(value)
 
     @property
     def retry_policy(self) -> RetryPolicy:

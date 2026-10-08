@@ -29,7 +29,55 @@ Any option you set on the session — headers, auth, cookies, adapters — is au
 
 ## Proxies
 
-Set `session.proxies` to route traffic through an HTTP or SOCKS proxy:
+The quickest way to route every request through a proxy is the built-in
+`proxies` argument. Pass a `requests`-style mapping straight to `YouTube`
+(or `InnerTubeClient`) — no custom session required:
+
+```python
+from ytscrape import YouTube
+
+proxy = {"https": "http://user:pass@proxy:8080"}
+# or route both schemes:
+# proxy = {
+#     "http": "http://user:pass@proxy:8080",
+#     "https": "http://user:pass@proxy:8080",
+# }
+
+with YouTube(proxies=proxy) as yt:
+    details = yt.video("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    print(details.title)
+```
+
+### Rotating proxies (after a bot block)
+
+Because YouTube may start serving captchas once it flags an IP, you can swap
+the proxy at runtime by assigning to the `proxies` property. This is handy when
+you catch a `BotDetected` / `RateLimited` error and want to retry from a fresh
+IP without rebuilding `YouTube`:
+
+```python
+from ytscrape import YouTube, BotDetected, RateLimited
+
+proxies = [
+    {"https": "http://user:pass@proxy-a:8080"},
+    {"https": "http://user:pass@proxy-b:8080"},
+]
+
+with YouTube(proxies=proxies[0]) as yt:
+    for attempt, proxy in enumerate(proxies):
+        yt.proxies = proxy  # rotate to the next IP
+        try:
+            details = yt.video("dQw4w9WgXcQ")
+            break
+        except (BotDetected, RateLimited):
+            if attempt == len(proxies) - 1:
+                raise
+```
+
+### Via a custom session
+
+For finer control (SOCKS proxies, per-scheme adapters, cookies) you can still
+inject your own session and set `session.proxies` on it:
 
 ```python
 import requests

@@ -302,6 +302,39 @@ class TestAsyncClientBackoff:
             AsyncInnerTubeClient(session=MagicMock(), max_concurrency=0)
 
 
+class TestAsyncProxies:
+    def test_proxies_to_mounts_helper(self) -> None:
+        httpx = pytest.importorskip("httpx")
+        from ytscrape.async_client import _proxies_to_mounts
+
+        mounts = _proxies_to_mounts(
+            httpx, {"https": "http://proxy:8080", "http": "http://proxy:3128"}
+        )
+        assert set(mounts) == {"https://", "http://"}
+        assert all(
+            isinstance(t, httpx.AsyncHTTPTransport) for t in mounts.values()
+        )
+
+    def test_proxies_build_client_with_mounts(self) -> None:
+        pytest.importorskip("httpx")
+        proxies = {"https": "http://user:pass@proxy:8080"}
+        client = AsyncInnerTubeClient(proxies=proxies)
+        assert client.proxies == proxies
+        # The proxy is wired into the underlying httpx client's mounts.
+        assert len(client._session._mounts) >= 1
+
+    def test_proxies_default_empty(self) -> None:
+        pytest.importorskip("httpx")
+        client = AsyncInnerTubeClient()
+        assert client.proxies == {}
+
+    def test_proxies_forwarded_by_facade(self) -> None:
+        pytest.importorskip("httpx")
+        proxies = {"https": "http://proxy:8080"}
+        yt = AsyncYouTube(proxies=proxies)
+        assert yt.proxies == proxies
+
+
 class TestAsyncSearchPaging:
     def test_fetch_next_page(self) -> None:
         async def body() -> None:
