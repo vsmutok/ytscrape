@@ -311,9 +311,7 @@ class TestAsyncProxies:
             httpx, {"https": "http://proxy:8080", "http": "http://proxy:3128"}
         )
         assert set(mounts) == {"https://", "http://"}
-        assert all(
-            isinstance(t, httpx.AsyncHTTPTransport) for t in mounts.values()
-        )
+        assert all(isinstance(t, httpx.AsyncHTTPTransport) for t in mounts.values())
 
     def test_proxies_build_client_with_mounts(self) -> None:
         pytest.importorskip("httpx")
