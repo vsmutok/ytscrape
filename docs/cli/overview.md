@@ -20,19 +20,22 @@ These flags apply to every subcommand and can be placed **before or after** the 
 | ------------ | ------- | ------- | --------------------------------------------------------------------------- |
 | `--language` | `HL`    | `en`    | Interface language sent as the `hl` parameter, e.g. `en`, `uk`, `de`.       |
 | `--region`   | `GL`    | `US`    | Content region sent as the `gl` parameter, e.g. `US`, `UA`, `DE`.           |
-| `--format`   | —       | `table` | `table` prints a colourful box table; `plain` keeps the old script output; `json` / `csv` export structured data. |
-| `--output` / `-o` | `FILE` | stdout | Write `json` / `csv` to a file instead of stdout. |
+| `--format`   | —       | `table` | `table` prints a colourful box table; `plain` keeps the old script output; `json` exports one document; `jsonl` emits one JSON object per line; `csv` exports structured data. |
+| `--output` / `-o` | `FILE` | stdout | Write `json` / `jsonl` / `csv` to a file instead of stdout. |
 | `--no-color` | —       | off     | Disable ANSI colours. Also honoured via the `NO_COLOR` environment variable. |
 | `--no-logo`  | —       | off     | Hide the mini `▶ ytscrape` wordmark (red `yt`, white `scrape`) shown above table output. |
 | `--version`  | —       | —       | Print the installed ytscrape version and exit.                              |
 
 Table mode also draws a small spinner on stderr (`⠋ searching…`) while the request is in flight. `--format plain` and non-TTY stderr skip it so scripts stay clean.
 
+JSON Lines (`--format jsonl`) writes one compact JSON object per line, which is convenient for streaming into line oriented tools. Collections produce one line per item; single objects produce one line. The `--output` / `-o` flag writes JSON Lines to a file just like JSON and CSV.
+
 Global flags (`--format`, `--output`, `--language`, …) work **before or after** the subcommand:
 
 ```bash
 # Structured export (stdout or -o FILE)
 ytscrape search "python" --max 5 --format json
+ytscrape search "python" --max 5 --format jsonl
 ytscrape comments dQw4w9WgXcQ --max 20 --format csv -o comments.csv
 ```
 

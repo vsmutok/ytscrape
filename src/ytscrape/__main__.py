@@ -4,6 +4,7 @@ Examples:
     python -m ytscrape search "python tutorial" --filter videos --max 10
     python -m ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
     python -m ytscrape transcript dQw4w9WgXcQ --lang en --lang uk
+    ytscrape search "python" --format jsonl --max 10
 """
 
 from __future__ import annotations
@@ -40,12 +41,13 @@ def _add_shared_flags(
     )
     parser.add_argument(
         "--format",
-        choices=("table", "plain", "json", "csv"),
+        choices=("table", "plain", "json", "jsonl", "csv"),
         default="table" if default is None else default,
         dest="output_format",
         help=(
             "Output style. 'table' (default) is pretty; 'plain' is "
-            "script-friendly; 'json' / 'csv' export structured data."
+            "script-friendly; 'json' exports one document; 'jsonl' writes "
+            "one JSON object per line; 'csv' exports structured data."
         ),
     )
     parser.add_argument(

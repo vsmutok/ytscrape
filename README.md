@@ -61,6 +61,7 @@ ytscrape search "python tutorial" --filter videos --max 10
 ytscrape video https://www.youtube.com/watch?v=dQw4w9WgXcQ
 ytscrape channel @RickAstleyYT
 ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
+ytscrape search "python" --format jsonl --max 10
 ```
 
 `python -m ytscrape …` works too. See the [full CLI guide](https://vsmutok.github.io/ytscrape/cli/overview/) for more.
@@ -75,7 +76,7 @@ ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
 | 💬 Comments **and replies** (every comment, not only "Top") | `yt.comments()` | `ytscrape comments` |
 | 📝 Transcripts / subtitles / captions | `yt.transcript()` | `ytscrape transcript` |
 
-Export everything to **JSON or CSV** in one line.
+Export everything to **JSON, JSON Lines, or CSV** in one line.
 
 ## Why ytscrape?
 
@@ -87,7 +88,7 @@ Export everything to **JSON or CSV** in one line.
 - 🌍 **Localisation** — `language` (`hl`) and `region` (`gl`), validated ISO codes.
 - ⚡ **Sync & async** — optional `httpx` extra for `AsyncYouTube`.
 - 🖥️ **CLI included** — `ytscrape search "python" --max 10`.
-- 📤 **JSON / CSV export** — `video.to_json()`, `dumps_csv(results)`, or
+- 📤 **JSON / JSONL / CSV export** — `video.to_json()`, `dumps_csv(results)`, or
   `ytscrape search "python" --format json`.
 
 ## Use cases
