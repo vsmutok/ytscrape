@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 import sys
 import threading
 import unicodedata
 from collections.abc import Callable, Iterable, Sequence
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, TextIO
 
-from .export import dump_csv, dump_json, dumps_csv, dumps_json
+from .export import dump_csv, dump_json, dumps_csv, dumps_json, to_dict
 from .models import Channel, ChannelDetails, Comment, Playlist, Video, VideoDetails
 from .transcripts import Transcript, TranscriptList
 
@@ -411,6 +413,15 @@ def spinner_on(args: argparse.Namespace) -> bool:
     return bool(getattr(sys.stderr, "isatty", lambda: False)())
 
 
+def _dumps_jsonl(payload: object) -> str:
+    data = to_dict(payload)
+    items = data if isinstance(data, list) else [data]
+    return "".join(
+        json.dumps(item, ensure_ascii=False, separators=(",", ":")) + "\n"
+        for item in items
+    )
+
+
 def emit_export(args: argparse.Namespace, payload: object) -> None:
     dest = args.output
     if args.output_format == "json":
@@ -418,6 +429,13 @@ def emit_export(args: argparse.Namespace, payload: object) -> None:
             dump_json(payload, dest)
         else:
             sys.stdout.write(dumps_json(payload))
+        return
+    if args.output_format == "jsonl":
+        text = _dumps_jsonl(payload)
+        if dest:
+            Path(dest).write_text(text, encoding="utf-8")
+        else:
+            sys.stdout.write(text)
         return
     if dest:
         dump_csv(payload, dest)
@@ -442,7 +460,7 @@ def run_search(yt: YouTube, args: argparse.Namespace) -> None:
                 max_results=args.max_results,
             )
         )
-    if args.output_format in {"json", "csv"}:
+    if args.output_format in {"json", "jsonl", "csv"}:
         emit_export(args, results)
     elif pretty:
         headers, rows = search_rows(results)
@@ -457,7 +475,7 @@ def run_video(yt: YouTube, args: argparse.Namespace) -> None:
     color = colour(args)
     with Spinner("fetching video…", enabled=spinner_on(args)):
         details = yt.video(args.video)
-    if args.output_format in {"json", "csv"}:
+    if args.output_format in {"json", "jsonl", "csv"}:
         emit_export(args, details)
     elif pretty:
         print(render_kv(video_pairs(details), enabled=color))
@@ -477,7 +495,7 @@ def run_channel(yt: YouTube, args: argparse.Namespace) -> None:
     color = colour(args)
     with Spinner("fetching channel…", enabled=spinner_on(args)):
         details = yt.channel(args.channel)
-    if args.output_format in {"json", "csv"}:
+    if args.output_format in {"json", "jsonl", "csv"}:
         emit_export(args, details)
     elif pretty:
         print(render_kv(channel_pairs(details), enabled=color))
@@ -512,7 +530,7 @@ def run_comments(yt: YouTube, args: argparse.Namespace) -> None:
                 sort=args.sort,
             )
         )
-    if args.output_format in {"json", "csv"}:
+    if args.output_format in {"json", "jsonl", "csv"}:
         emit_export(args, comments)
     elif pretty:
         print(comment_table(comments, enabled=color))
@@ -532,7 +550,7 @@ def run_transcript(yt: YouTube, args: argparse.Namespace) -> None:
         )
         with spin:
             tracks = yt.transcripts(args.video)
-        if args.output_format in {"json", "csv"}:
+        if args.output_format in {"json", "jsonl", "csv"}:
             emit_export(args, list(tracks))
         elif pretty:
             print(transcript_list_table(tracks, enabled=color))
@@ -550,7 +568,7 @@ def run_transcript(yt: YouTube, args: argparse.Namespace) -> None:
                 languages=languages,
                 preserve_formatting=args.preserve_formatting,
             )
-        if args.output_format in {"json", "csv"}:
+        if args.output_format in {"json", "jsonl", "csv"}:
             emit_export(args, result)
         elif pretty:
             print(transcript_table(result, enabled=color))

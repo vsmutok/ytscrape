@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from io import StringIO
 from time import sleep
 
@@ -12,9 +13,11 @@ from ytscrape._cli import (
     Spinner,
     colour_enabled,
     display_width,
+    emit_export,
     logo,
     paint,
     render_table,
+    run_search,
     search_rows,
     video_pairs,
 )
@@ -32,6 +35,39 @@ def test_global_flags_work_after_subcommand() -> None:
     before = parser.parse_args(["--format", "json", "search", "JS", "-o", "out.json"])
     assert before.output_format == "json"
     assert before.output == "out.json"
+
+
+def test_jsonl_output_is_line_parseable(capsys) -> None:
+    items = [
+        Video(video_id="a", title="A"),
+        Video(video_id="b", title="B"),
+    ]
+
+    class FakeYouTube:
+        def search(self, query, *, filter, max_results):
+            assert query == "query"
+            assert filter == "all"
+            return items[:max_results]
+
+    args = _build_parser().parse_args(
+        ["search", "query", "--max", "1", "--format", "jsonl"]
+    )
+    run_search(FakeYouTube(), args)
+
+    lines = capsys.readouterr().out.splitlines()
+    assert [json.loads(line)["video_id"] for line in lines] == ["a"]
+    assert all("\n" not in line for line in lines)
+
+
+def test_jsonl_output_file_contains_one_line_per_item(tmp_path) -> None:
+    path = tmp_path / "videos.jsonl"
+    args = _build_parser().parse_args(
+        ["search", "query", "--max", "2", "--format", "jsonl", "-o", str(path)]
+    )
+    emit_export(args, [Video(video_id="a"), Video(video_id="b")])
+
+    lines = path.read_text(encoding="utf-8").splitlines()
+    assert [json.loads(line)["video_id"] for line in lines] == ["a", "b"]
 
 
 def test_spinner_writes_and_clears() -> None:
