@@ -100,6 +100,7 @@ nav:
       - Language & region: guides/language-region.md
       - Pagination: guides/pagination.md
       - Async API: guides/async.md
+      - MCP server: guides/mcp.md
       - Export JSON / CSV: guides/export.md
       - Error handling: guides/error-handling.md
       - Reliability: guides/reliability.md
