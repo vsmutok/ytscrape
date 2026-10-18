@@ -24,7 +24,9 @@ from ytscrape import (  # noqa: E402
 )
 from ytscrape.mcp_server import (  # noqa: E402
     _MAX_CHARS,
+    _MAX_OFFSET,
     _build_parser,
+    _encode_cursor,
     _resolve_proxies,
     _transcript_payload,
     build_server,
@@ -320,6 +322,42 @@ def test_invalid_cursor_is_a_tool_error() -> None:
     assert "Invalid cursor" in text
 
 
+@pytest.mark.parametrize(
+    ("tool", "arguments"),
+    [
+        ("search_videos", {"query": "python"}),
+        ("get_channel_videos", {"channel": "@chan"}),
+        ("get_comments", {"video": "vid1"}),
+    ],
+)
+def test_cursors_beyond_the_depth_cap_are_rejected(
+    tool: str, arguments: dict[str, Any]
+) -> None:
+    fake = FakeYouTube()
+    cursor = _encode_cursor(_MAX_OFFSET + 1)
+    result = asyncio.run(
+        _call_tool(_build(fake), tool, {**arguments, "cursor": cursor})
+    )
+    assert result.is_error
+    text = " ".join(block.text for block in result.content)
+    assert "depth" in text
+    assert fake.calls == []
+
+
+def test_cursor_at_the_depth_cap_is_allowed() -> None:
+    fake = FakeYouTube()
+    result = asyncio.run(
+        _call_tool(
+            _build(fake),
+            "search_videos",
+            {"query": "python", "cursor": _encode_cursor(_MAX_OFFSET)},
+        )
+    )
+    assert not result.is_error
+    # offset + default page size + probe
+    assert fake.calls[0][1]["max_results"] == _MAX_OFFSET + 11
+
+
 def test_filter_and_sort_are_enums() -> None:
     listed = asyncio.run(_list_tools(_build(FakeYouTube())))
     tools = {tool.name: tool for tool in listed}
@@ -363,11 +401,57 @@ def test_transcript_pages_when_text_exceeds_the_cap() -> None:
     assert second["next_cursor"] != first["next_cursor"]
 
 
+@pytest.mark.parametrize("include_timestamps", [False, True])
+def test_transcript_cut_mid_snippet_reports_truncated(
+    include_timestamps: bool,
+) -> None:
+    # Long enough to be cut and genuinely ending with an ellipsis, which the
+    # old endswith-based heuristic mistook for an already-truncated snippet.
+    text = "x" * (_MAX_CHARS * 2) + "…"
+    transcript = Transcript(
+        snippets=(TranscriptSnippet(text=text, start=0.0, duration=1.0),),
+        video_id="vid1",
+        language="English",
+        language_code="en",
+        is_generated=True,
+    )
+    payload = _transcript_payload(
+        transcript, include_timestamps=include_timestamps, cursor=None
+    )
+    assert payload["truncated"] is True
+    assert payload["has_more"] is False
+    assert payload["next_cursor"] is None
+    assert len(payload["text"]) <= _MAX_CHARS
+    assert payload["text"].endswith("…")
+    assert "not repeated" in payload["hint"]
+    if include_timestamps:
+        assert payload["snippets"][-1]["text"] == payload["text"]
+
+
+def test_transcript_ellipsis_is_not_mistaken_for_a_cut() -> None:
+    transcript = Transcript(
+        snippets=(TranscriptSnippet(text="to be continued…", start=0.0, duration=1.0),),
+        video_id="vid1",
+        language="English",
+        language_code="en",
+        is_generated=False,
+    )
+    payload = _transcript_payload(transcript, include_timestamps=False, cursor=None)
+    assert payload["truncated"] is False
+    assert payload["has_more"] is False
+    assert payload["text"] == "to be continued…"
+
+
 def test_list_transcripts_returns_tracks() -> None:
     result = asyncio.run(
         _call_tool(_build(FakeYouTube()), "list_transcripts", {"video": "vid1"})
     )
-    track = result.structured_content["result"][0]
+    content = result.structured_content
+    assert content["count"] == 1
+    assert content["has_more"] is False
+    assert content["next_cursor"] is None
+    assert content["truncated"] is False
+    track = content["items"][0]
     assert track["language_code"] == "en"
     assert track["is_translatable"] is False
 

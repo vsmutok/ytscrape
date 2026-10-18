@@ -26,7 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transcripts return `has_more` / `next_cursor` instead of an unbounded dump.
   `max_results` is capped at 50. `filter`, `sort` and `detail`
   (`concise` / `full`) are enums. `get_video` / `get_channel` default to a
-  concise projection.
+  concise projection. Cursors are depth-capped at 1 000 items (each page
+  re-reads the listing from the start), `list_transcripts` returns the same
+  `{items, count, has_more, next_cursor, truncated}` envelope as the other
+  list tools, and a transcript snippet cut mid-text says so in `hint`.
 
 ## [2.1.0] — 2026-10-08
 

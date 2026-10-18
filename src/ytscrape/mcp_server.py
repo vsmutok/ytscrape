@@ -50,6 +50,10 @@ _F = TypeVar("_F", bound=Callable[..., Any])
 # Hard ceiling so one tool call cannot fill an agent's context window.
 # max_results above this is clamped; the response says so via ``hint``.
 _MAX_RESULTS = 50
+# Each page re-reads the listing from the start (offset-based pagination), so
+# a deep cursor would make the server fetch hundreds of items for one page.
+# Cursors past this offset are rejected instead of honoured.
+_MAX_OFFSET = 1_000
 _MAX_CHARS = 16_000
 _DESCRIPTION_PREVIEW = 400
 
@@ -122,7 +126,9 @@ _SERVER_INSTRUCTIONS = (
     "get_comments for comments (sort='newest' collects every comment, "
     "include_replies adds replies) and get_transcript / list_transcripts for "
     "captions. List tools return items plus has_more and next_cursor — pass "
-    "next_cursor to continue instead of raising max_results (capped at 50). "
+    f"next_cursor to continue instead of raising max_results (capped at "
+    f"{_MAX_RESULTS}); each page re-reads the listing from the start, so "
+    f"cursors beyond {_MAX_OFFSET} items are rejected. "
     "Responses are truncated to fit a context window (truncated=true plus a "
     "hint). get_video / get_channel default to detail='concise'; pass "
     "detail='full' only when you need the rest. All tools are read-only."
@@ -151,6 +157,21 @@ def _decode_cursor(cursor: str | None) -> int:
         ) from exc
     if offset < 0:
         raise ToolError("Invalid cursor.")
+    return offset
+
+
+def _decode_fetch_offset(cursor: str | None) -> int:
+    """Decode a cursor for tools whose pages re-read the listing from the top.
+
+    Fetching is O(offset) for these tools, so cursors beyond ``_MAX_OFFSET``
+    are rejected instead of turned into a huge internal ``max_results``.
+    """
+    offset = _decode_cursor(cursor)
+    if offset > _MAX_OFFSET:
+        raise ToolError(
+            f"Cursor is beyond the supported depth of {_MAX_OFFSET} items. "
+            "Start a new listing instead of paging this deep."
+        )
     return offset
 
 
@@ -352,6 +373,7 @@ def _transcript_payload(
         offset = len(snippets)
     kept: list[Any] = []
     parts: list[str] = []
+    cut = False
     for snippet in snippets[offset:]:
         piece = snippet.text or ""
         trial = " ".join([*parts, piece] if piece else parts)
@@ -359,9 +381,13 @@ def _transcript_payload(
         if parts and len(trial) + overhead > _MAX_CHARS:
             break
         if not parts and len(piece) + overhead > _MAX_CHARS:
+            # One snippet longer than the whole page: keep its head and stop.
+            # The cursor walks past it, so the tail is not repeated on the
+            # next page — the hint says so.
             piece = piece[: _MAX_CHARS - overhead] + "…"
             kept.append(snippet)
             parts.append(piece)
+            cut = True
             break
         kept.append(snippet)
         if piece:
@@ -369,20 +395,21 @@ def _transcript_payload(
         if len(" ".join(parts)) + overhead >= _MAX_CHARS:
             break
     consumed = len(kept)
-    cut_snippet = bool(
-        kept
-        and parts
-        and parts[-1].endswith("…")
-        and not (kept[-1].text or "").endswith("…")
-    )
-    truncated = cut_snippet or offset + consumed < len(snippets)
-    next_cursor = _encode_cursor(offset + consumed) if truncated and consumed else None
+    remaining = offset + consumed < len(snippets)
+    truncated = cut or remaining
+    next_cursor = _encode_cursor(offset + consumed) if remaining else None
     hint = None
     if truncated:
-        hint = (
-            "Transcript was cut to fit the context window. Pass next_cursor for "
-            "the next snippets, keep include_timestamps=false, or narrow languages."
-        )
+        hint = "Transcript was cut to fit the context window"
+        if cut:
+            hint += "; the rest of the cut snippet is not repeated"
+        if remaining:
+            hint += (
+                ". Pass next_cursor for the next snippets, keep "
+                "include_timestamps=false, or narrow languages."
+            )
+        else:
+            hint += "."
     payload: dict[str, Any] = {
         "video_id": transcript.video_id,
         "language": transcript.language,
@@ -390,12 +417,12 @@ def _transcript_payload(
         "is_generated": transcript.is_generated,
         "text": " ".join(parts),
         "truncated": truncated,
-        "has_more": truncated,
+        "has_more": remaining,
         "next_cursor": next_cursor,
     }
     if include_timestamps:
         payload["snippets"] = [to_dict(snippet) for snippet in kept]
-        if truncated and kept and parts and parts[-1].endswith("…"):
+        if cut:
             payload["snippets"][-1] = {**payload["snippets"][-1], "text": parts[-1]}
     if hint:
         payload["hint"] = hint
@@ -445,7 +472,8 @@ def build_server(
 
         The response is ``{items, count, has_more, next_cursor, truncated}``.
         When ``has_more`` is true, pass ``next_cursor`` back to continue.
-        ``max_results`` is capped at 50.
+        ``max_results`` is capped at 50. Each page re-reads the results from
+        the start, so cursors past 1 000 items are rejected.
 
         Args:
             query: The search query.
@@ -455,7 +483,7 @@ def build_server(
             cursor: Opaque ``next_cursor`` from the previous page.
         """
         limit, cap_hint = _clamp_max_results(max_results)
-        offset = _decode_cursor(cursor)
+        offset = _decode_fetch_offset(cursor)
         results = yt.search(
             query,
             filter=SearchFilter.from_value(filter),
@@ -518,6 +546,8 @@ def build_server(
 
         Returns ``{items, count, has_more, next_cursor, truncated}``.
         ``max_results`` is capped at 50; pass ``next_cursor`` to continue.
+        Each page re-reads the uploads from the start, so cursors past
+        1 000 items are rejected.
 
         Args:
             channel: A channel id, '@handle' or channel URL.
@@ -525,7 +555,7 @@ def build_server(
             cursor: Opaque ``next_cursor`` from the previous page.
         """
         limit, cap_hint = _clamp_max_results(max_results)
-        offset = _decode_cursor(cursor)
+        offset = _decode_fetch_offset(cursor)
         videos = yt.channel_videos(channel, max_results=offset + limit + 1)
         return _list_payload(videos, cursor=cursor, limit=limit, cap_hint=cap_hint)
 
@@ -545,7 +575,8 @@ def build_server(
         of raising ``max_results`` (capped at 50, replies included in the
         count). YouTube's default 'top' view omits some comments; pass
         sort='newest' to walk every comment. Replies follow their parent and
-        carry 'is_reply' set to true.
+        carry 'is_reply' set to true. Each page re-reads the thread from the
+        start, so cursors past 1 000 items are rejected.
 
         Args:
             video: A video id or any YouTube URL that contains one.
@@ -556,7 +587,7 @@ def build_server(
             cursor: Opaque ``next_cursor`` from the previous page.
         """
         limit, cap_hint = _clamp_max_results(max_results)
-        offset = _decode_cursor(cursor)
+        offset = _decode_fetch_offset(cursor)
         thread = yt.comments(
             video,
             max_results=offset + limit + 1,
@@ -615,15 +646,28 @@ def build_server(
 
     @server.tool(annotations=_read_only("List Transcripts"))
     @_translate_errors
-    def list_transcripts(video: str) -> list[dict[str, Any]]:
+    def list_transcripts(video: str) -> dict[str, Any]:
         """List the caption tracks available for a video.
 
-        Use the returned language codes with get_transcript.
+        Returns the same ``{items, count, has_more, next_cursor, truncated}``
+        envelope as the other list tools; track lists are short, so there is
+        never a ``next_cursor``.
 
         Args:
             video: A video id or any YouTube URL that contains one.
         """
-        return [to_dict(track) for track in yt.transcripts(video)]
+        tracks = [_list_item(track) for track in yt.transcripts(video)]
+        fitted, truncated = _fit_items(tracks, budget=_MAX_CHARS)
+        payload: dict[str, Any] = {
+            "items": fitted,
+            "count": len(fitted),
+            "has_more": False,
+            "next_cursor": None,
+            "truncated": truncated,
+        }
+        if truncated:
+            payload["hint"] = "Response was cut to fit the context window."
+        return payload
 
     return server
 

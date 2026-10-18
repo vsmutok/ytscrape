@@ -56,14 +56,15 @@ ceilings are hard — they are not configuration flags.
 | Response size | **16 000** characters of JSON | `truncated: true` and a `hint`. The call still succeeds. |
 | Description preview | **400** characters | `get_video` / `get_channel` with `detail="concise"` shorten `description`. |
 | Cursor | opaque string | Must be the previous `next_cursor`, unchanged. Anything else is a tool error. |
+| Cursor depth | **1 000** items | Cursors past that offset are a tool error: pagination re-reads the listing from the start, so it is intentionally shallow. |
 
 `max_results` must be at least 1. It is a **page size**, not "how many items
 exist". Asking for 1 000 comments does not return 1 000 comments.
 
 ### Pagination
 
-List tools (`search_videos`, `get_channel_videos`, `get_comments`) and
-`get_transcript` return:
+List tools (`search_videos`, `get_channel_videos`, `get_comments`,
+`list_transcripts`) and `get_transcript` return the same envelope:
 
 ```json
 {
@@ -80,6 +81,12 @@ When `has_more` is true, call the same tool again with `cursor` set to
 `next_cursor`. Do not raise `max_results` to "get the rest" — the cap will
 clamp it, and a bigger page is more likely to be cut for size.
 
+Pagination is offset-based: every page re-reads the listing from the start and
+skips to the cursor. Deeper pages therefore cost more YouTube requests, and
+cursors past 1 000 items are rejected — start a new listing instead.
+`list_transcripts` returns the same envelope, but track lists are short:
+`has_more` is always `false` and `next_cursor` is `null`.
+
 `get_transcript` pages by caption snippets, not by a character budget you
 choose. `has_more` / `next_cursor` work the same way. Omit
 `include_timestamps` (or set it to `false`) and pass a narrower `languages`
@@ -93,6 +100,10 @@ list when you only need the text.
 - pass `next_cursor` instead of raising `max_results`
 - `include_timestamps=false`, or a narrower `languages`, for a long transcript
 - `detail="concise"` (the default) instead of `detail="full"`
+
+A single caption snippet longer than the page is cut mid-text; its `hint` says
+the rest of that snippet is not repeated, and `next_cursor` continues with the
+following snippet.
 
 `detail="full"` on `get_video` / `get_channel` still sits under the same
 16 000-character ceiling: bulky fields are dropped and the longest string is
