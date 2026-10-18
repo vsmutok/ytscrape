@@ -90,6 +90,32 @@ A fully fetched and parsed transcript for a single video. Returned by `Transcrip
 
 ***
 
+### Subtitle exports
+
+**`to_srt()`** (`str`)
+
+:   Returns SubRip text with sequential cue numbers starting at 1 and
+    `HH:MM:SS,mmm` timestamps. An empty transcript returns `""`.
+
+**`to_vtt()`** (`str`)
+
+:   Returns WebVTT text with a `WEBVTT` header and `HH:MM:SS.mmm`
+    timestamps. An empty transcript returns `"WEBVTT\n\n"`.
+    Caption text is escaped as plain WebVTT text.
+
+**`dump_srt(path)`** / **`dump_vtt(path)`** (`None`)
+
+:   Writes the corresponding subtitle text to a `str` / `Path` filename in
+    UTF-8, or to an open text stream. Caller-owned streams remain open.
+
+Both formats preserve snippet order and overlaps, round `start` and
+`start + duration` to milliseconds, skip empty/whitespace-only captions, and
+remove blank payload lines. Negative or non-finite times and non-empty cues
+that do not span at least one millisecond after rounding raise `ValueError`.
+No transcript fields are modified.
+
+***
+
 ## TranscriptTrack
 
 Metadata for one available caption track. Instances are collected inside a `TranscriptList` and are not downloaded until you call `fetch()`.

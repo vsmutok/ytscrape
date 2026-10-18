@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
+from io import StringIO
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -189,3 +192,157 @@ class TestYouTubeTranscriptFacade:
         result = yt.transcript("dQw4w9WgXcQ", languages=["de", "en"])
         assert result.language_code == "de"
         assert result[0].text.startswith("Hello")
+
+
+@pytest.fixture
+def subtitle_transcript() -> Transcript:
+    return Transcript(
+        snippets=(
+            TranscriptSnippet(text="first line", start=0.0, duration=2.34),
+            TranscriptSnippet(text="second line", start=2.34, duration=2.44),
+        ),
+        video_id="vid12345678",
+        language="English",
+        language_code="en",
+        is_generated=False,
+    )
+
+
+class TestSubtitleExport:
+    def test_srt(self, subtitle_transcript: Transcript) -> None:
+        assert subtitle_transcript.to_srt() == (
+            "1\n00:00:00,000 --> 00:00:02,340\nfirst line\n\n"
+            "2\n00:00:02,340 --> 00:00:04,780\nsecond line\n\n"
+        )
+
+    def test_vtt(self, subtitle_transcript: Transcript) -> None:
+        assert subtitle_transcript.to_vtt() == (
+            "WEBVTT\n\n"
+            "00:00:00.000 --> 00:00:02.340\nfirst line\n\n"
+            "00:00:02.340 --> 00:00:04.780\nsecond line\n\n"
+        )
+
+    @pytest.mark.parametrize(
+        ("snippets", "expected_srt", "expected_vtt"),
+        [
+            ((), "", "WEBVTT\n\n"),
+            (
+                (TranscriptSnippet("", 0, 1), TranscriptSnippet(" \t\n", 1, 1)),
+                "",
+                "WEBVTT\n\n",
+            ),
+        ],
+    )
+    def test_empty_captions(
+        self, subtitle_transcript, snippets, expected_srt, expected_vtt
+    ):
+        transcript = replace(subtitle_transcript, snippets=snippets)
+        assert transcript.to_srt() == expected_srt
+        assert transcript.to_vtt() == expected_vtt
+
+    @pytest.mark.parametrize(
+        ("start", "duration", "expected"),
+        [
+            (0.0006, 1.0002, "00:00:00,001 --> 00:00:01,001"),
+            (59.9996, 0.5004, "00:01:00,000 --> 00:01:00,500"),
+            (3599.9996, 1.2344, "01:00:00,000 --> 01:00:01,234"),
+            (3599.5, 1, "00:59:59,500 --> 01:00:00,500"),
+            (360000, 2, "100:00:00,000 --> 100:00:02,000"),
+        ],
+    )
+    def test_timestamp_rounding(self, subtitle_transcript, start, duration, expected):
+        transcript = replace(
+            subtitle_transcript, snippets=(TranscriptSnippet("text", start, duration),)
+        )
+        assert transcript.to_srt() == f"1\n{expected}\ntext\n\n"
+        assert (
+            transcript.to_vtt() == f"WEBVTT\n\n{expected.replace(',', '.')}\ntext\n\n"
+        )
+
+    def test_empty_lines_do_not_split_cues(self, subtitle_transcript):
+        transcript = replace(
+            subtitle_transcript,
+            snippets=(
+                TranscriptSnippet("", 0, 1),
+                TranscriptSnippet("first\r\n\r\nsecond\rthird", 1, 2),
+                TranscriptSnippet(" ", 3, 1),
+                TranscriptSnippet("last", 4, 1),
+            ),
+        )
+        assert transcript.to_srt() == (
+            "1\n00:00:01,000 --> 00:00:03,000\nfirst\nsecond\nthird\n\n"
+            "2\n00:00:04,000 --> 00:00:05,000\nlast\n\n"
+        )
+        assert transcript.to_vtt() == (
+            "WEBVTT\n\n00:00:01.000 --> 00:00:03.000\nfirst\nsecond\nthird\n\n"
+            "00:00:04.000 --> 00:00:05.000\nlast\n\n"
+        )
+
+    def test_order_and_overlaps_are_preserved(self, subtitle_transcript):
+        transcript = replace(
+            subtitle_transcript,
+            snippets=(
+                TranscriptSnippet("first", 1, 4),
+                TranscriptSnippet("second", 2, 1),
+            ),
+        )
+        assert transcript.to_srt() == (
+            "1\n00:00:01,000 --> 00:00:05,000\nfirst\n\n"
+            "2\n00:00:02,000 --> 00:00:03,000\nsecond\n\n"
+        )
+        assert transcript.snippets[0].duration == 4
+
+    def test_vtt_escapes_plain_text(self, subtitle_transcript):
+        transcript = replace(
+            subtitle_transcript, snippets=(TranscriptSnippet("A < B & C --> D", 0, 1),)
+        )
+        assert transcript.to_vtt() == (
+            "WEBVTT\n\n00:00:00.000 --> 00:00:01.000\nA &lt; B &amp; C --&gt; D\n\n"
+        )
+
+    @pytest.mark.parametrize("method", ["to_srt", "to_vtt"])
+    @pytest.mark.parametrize(
+        ("start", "duration"),
+        [
+            (-1, 2),
+            (1, -0.5),
+            (float("nan"), 1),
+            (float("inf"), 1),
+            (0, float("nan")),
+            (0, float("inf")),
+            (0, 0),
+            (0, 0.0001),
+        ],
+    )
+    def test_invalid_timings(self, subtitle_transcript, method, start, duration):
+        transcript = replace(
+            subtitle_transcript, snippets=(TranscriptSnippet("text", start, duration),)
+        )
+        with pytest.raises(ValueError, match="Subtitle"):
+            getattr(transcript, method)()
+
+    @pytest.mark.parametrize("extension", ["srt", "vtt"])
+    @pytest.mark.parametrize("as_string", [False, True])
+    def test_dump_utf8_path(
+        self, subtitle_transcript, tmp_path: Path, extension, as_string
+    ):
+        transcript = replace(
+            subtitle_transcript, snippets=(TranscriptSnippet("Café 日本語", 0, 1),)
+        )
+        path = tmp_path / f"captions.{extension}"
+        result = getattr(transcript, f"dump_{extension}")(
+            str(path) if as_string else path
+        )
+        assert result is None
+        assert (
+            path.read_text(encoding="utf-8") == getattr(transcript, f"to_{extension}")()
+        )
+        assert "Café 日本語".encode() in path.read_bytes()
+
+    @pytest.mark.parametrize("extension", ["srt", "vtt"])
+    def test_dump_text_stream(self, subtitle_transcript, extension):
+        stream = StringIO()
+        result = getattr(subtitle_transcript, f"dump_{extension}")(stream)
+        assert result is None
+        assert stream.getvalue() == getattr(subtitle_transcript, f"to_{extension}")()
+        assert not stream.closed

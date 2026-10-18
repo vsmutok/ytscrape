@@ -46,6 +46,34 @@ transcript = yt.transcript(video_id, languages=["uk", "en"])
 
 `Transcript` also supports `len()`, iteration, indexing, and slicing directly over its snippets.
 
+## Exporting subtitles
+
+Use `to_srt()` or `to_vtt()` to get subtitle text, or the matching dump helper
+to save it as a UTF-8 file:
+
+```python
+transcript = yt.transcript(video_id, languages=["en"])
+print(transcript.to_srt())
+print(transcript.to_vtt())
+transcript.dump_srt("captions.srt")
+transcript.dump_vtt("captions.vtt")
+```
+
+Both dump helpers also accept an open text stream, like `dump_json()` does.
+They leave caller-owned streams open; choose UTF-8 when opening your own file.
+
+SRT uses sequential cue numbers and comma-separated milliseconds; VTT starts
+with `WEBVTT` and uses a dot. Cues follow the snippet order, preserving overlaps,
+with start and end (`start + duration`) rounded to the nearest millisecond.
+Empty or whitespace-only captions are skipped, and blank lines within a caption
+are removed to avoid ending a cue early. Other line breaks are retained.
+VTT escapes caption text as plain text rather than interpreting it as markup.
+
+An empty transcript exports as `""` for SRT and `"WEBVTT\n\n"` for VTT.
+Negative or non-finite times raise `ValueError`, as do non-empty cues whose
+end is not later than their start after millisecond rounding. Export does not
+change the transcript.
+
 ## `TranscriptSnippet` fields
 
 Each element of `transcript.snippets` is a frozen dataclass:

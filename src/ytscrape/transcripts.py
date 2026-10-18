@@ -12,12 +12,14 @@ Public surface is intentionally small and typed so it fits the rest of
 
 from __future__ import annotations
 
+import math
 import re
 from collections.abc import Iterable, Iterator
 from dataclasses import asdict, dataclass
-from html import unescape
+from html import escape, unescape
 from itertools import chain
-from typing import Any
+from pathlib import Path
+from typing import Any, TextIO
 
 from defusedxml import ElementTree
 from defusedxml.ElementTree import ParseError as XMLParseError
@@ -29,7 +31,7 @@ from .exceptions import (
     YtScraperError,
     with_block_mitigation,
 )
-from .export import Exportable
+from .export import Exportable, _write_text
 
 __all__ = [
     "Transcript",
@@ -96,6 +98,72 @@ class Transcript(Exportable):
     def to_raw_data(self) -> list[dict[str, Any]]:
         """List of ``{text, start, duration}`` dicts (API-compat helper)."""
         return [asdict(snippet) for snippet in self.snippets]
+
+    def to_srt(self) -> str:
+        """Return SubRip subtitles with numbered cues and millisecond timestamps.
+
+        Empty captions are skipped. Invalid timings raise ``ValueError``;
+        see :meth:`to_vtt` for the timing requirements.
+        """
+        return self._to_subtitles(webvtt=False)
+
+    def to_vtt(self) -> str:
+        """Return WebVTT subtitles, including the ``WEBVTT`` header.
+
+        Cues retain snippet order. Empty captions and blank payload lines are
+        skipped; caption text is escaped as plain WebVTT text. Start times
+        and durations must be finite and non-negative, and each non-empty
+        cue must end after its start when rounded to milliseconds. Invalid
+        timings raise ``ValueError`` rather than inventing replacement times.
+        """
+        return self._to_subtitles(webvtt=True)
+
+    def dump_srt(self, path: str | Path | TextIO) -> None:
+        """Write SubRip subtitles to a UTF-8 path or an open text stream."""
+        _write_text(path, self.to_srt())
+
+    def dump_vtt(self, path: str | Path | TextIO) -> None:
+        """Write WebVTT subtitles to a UTF-8 path or an open text stream."""
+        _write_text(path, self.to_vtt())
+
+    def _to_subtitles(self, *, webvtt: bool) -> str:
+        cues: list[str] = []
+        separator = "." if webvtt else ","
+        for snippet in self.snippets:
+            text = "\n".join(
+                line for line in snippet.text.splitlines() if line.strip()
+            ).strip()
+            if not text:
+                continue
+            if not math.isfinite(snippet.duration) or snippet.duration < 0:
+                raise ValueError("Subtitle durations must be finite and non-negative")
+            start = _subtitle_milliseconds(snippet.start)
+            end = _subtitle_milliseconds(snippet.start + snippet.duration)
+            if end <= start:
+                raise ValueError("Subtitle cues must span at least one millisecond")
+            timing = (
+                f"{_subtitle_timestamp(start, separator)} --> "
+                f"{_subtitle_timestamp(end, separator)}"
+            )
+            if webvtt:
+                text = escape(text, quote=False)
+            number = "" if webvtt else f"{len(cues) + 1}\n"
+            cues.append(f"{number}{timing}\n{text}\n\n")
+        header = "WEBVTT\n\n" if webvtt else ""
+        return header + "".join(cues)
+
+
+def _subtitle_milliseconds(seconds: float) -> int:
+    if not math.isfinite(seconds) or seconds < 0:
+        raise ValueError("Subtitle timestamps must be finite and non-negative")
+    return round(seconds * 1000)
+
+
+def _subtitle_timestamp(milliseconds: int, separator: str) -> str:
+    seconds, millis = divmod(milliseconds, 1000)
+    minutes, seconds = divmod(seconds, 60)
+    hours, minutes = divmod(minutes, 60)
+    return f"{hours:02d}:{minutes:02d}:{seconds:02d}{separator}{millis:03d}"
 
 
 @dataclass(frozen=True, slots=True)

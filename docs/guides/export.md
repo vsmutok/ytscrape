@@ -44,3 +44,19 @@ ytscrape video dQw4w9WgXcQ --format json -o video.json
 JSON includes computed fields such as `url`. Search items also get a `type`
 key (`video` / `channel` / `playlist`). Transcript CSV writes one row per
 caption snippet.
+
+## Subtitle files
+
+Fetched transcripts also expose `to_srt()` / `to_vtt()` and
+`dump_srt(path)` / `dump_vtt(path)` for SubRip and WebVTT subtitles:
+
+```python
+with YouTube() as yt:
+    transcript = yt.transcript("dQw4w9WgXcQ", languages=["en"])
+    transcript.dump_srt("captions.srt")
+    transcript.dump_vtt("captions.vtt")
+```
+
+These helpers accept file paths or text streams. See the
+[transcript guide](transcripts.md#exporting-subtitles) for timing and empty-caption
+handling.
