@@ -65,6 +65,9 @@ dependencies = [
 async = [
     "httpx>=0.27",
 ]
+mcp = [
+    "mcp>=2.3",
+]
 
 [project.urls]
 Homepage = "https://github.com/vsmutok/ytscrape"
@@ -75,6 +78,7 @@ Changelog = "https://github.com/vsmutok/ytscrape/blob/main/CHANGELOG.md"
 
 [project.scripts]
 ytscrape = "ytscrape.__main__:main"
+ytscrape-mcp = "ytscrape.mcp_server:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/ytscrape"]

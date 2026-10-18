@@ -11,6 +11,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - `Transcript.to_srt()` and `to_vtt()` for subtitle export, with UTF-8
   `dump_srt()` / `dump_vtt()` helpers accepting paths or text streams (#18).
+- Optional **MCP server**: install with `ytscrape[mcp]` and run `ytscrape-mcp`
+  (or `python -m ytscrape.mcp_server`) to expose search, video/channel
+  metadata, channel uploads, comments (replies included) and transcripts as
+  read-only Model Context Protocol tools. stdio by default, plus
+  `--transport streamable-http|sse` for hosted setups; `--language`,
+  `--region` and `--timeout` flags mirror the `YouTube` facade.
+  All tools carry read-only tool annotations (`readOnlyHint`, `openWorldHint`,
+  `idempotentHint`) so MCP clients can auto-approve them.
+- MCP server proxy support: `--proxy` (both schemes) plus `--http-proxy` /
+  `--https-proxy` for per-scheme routing; the standard `HTTP_PROXY` /
+  `HTTPS_PROXY` / `NO_PROXY` environment variables are honoured as well.
+- MCP responses are size-capped (`truncated` + `hint`). List tools and
+  transcripts return `has_more` / `next_cursor` instead of an unbounded dump.
+  `max_results` is capped at 50. `filter`, `sort` and `detail`
+  (`concise` / `full`) are enums. `get_video` / `get_channel` default to a
+  concise projection.
 
 ## [2.1.0] — 2026-10-08
 

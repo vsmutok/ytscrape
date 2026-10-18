@@ -21,6 +21,7 @@ no API key, no quota, no Selenium, no browser.**
 <p align="center">
   <a href="#installation">Installation</a> •
   <a href="#quick-start">Quick start</a> •
+  <a href="#mcp-server">MCP server</a> •
   <a href="#what-can-you-scrape-from-youtube">Features</a> •
   <a href="#use-cases">Use cases</a> •
   <a href="#ytscrape-vs-the-alternatives">Comparison</a> •
@@ -65,6 +66,60 @@ ytscrape comments https://youtu.be/dQw4w9WgXcQ --replies --sort newest --max 20
 
 `python -m ytscrape …` works too. See the [full CLI guide](https://vsmutok.github.io/ytscrape/cli/overview/) for more.
 
+## MCP server
+
+An optional [Model Context Protocol](https://modelcontextprotocol.io) server
+lets AI clients (Claude Code, Claude Desktop, Cursor, VS Code, …) scrape
+YouTube through ytscrape — no API key, no quota:
+
+```bash
+pip install "ytscrape[mcp]"
+```
+
+```json
+{
+  "mcpServers": {
+    "ytscrape": {
+      "command": "ytscrape-mcp"
+    }
+  }
+}
+```
+
+Behind a proxy or an IP block, pass the proxy in `args` (or set `HTTPS_PROXY`
+in `env` instead):
+
+```json
+{
+  "mcpServers": {
+    "ytscrape": {
+      "command": "ytscrape-mcp",
+      "args": ["--proxy", "http://user:pass@proxy.example.com:8080"]
+    }
+  }
+}
+```
+
+| Tool | What it does |
+| ---- | ------------ |
+| `search_videos` | Search videos, channels, playlists, Shorts, movies |
+| `get_video` | Video metadata (id or URL) |
+| `get_channel` | Channel metadata (id, `@handle` or URL) |
+| `get_channel_videos` | Channel uploads (Videos tab) |
+| `get_comments` | Comments — `sort="newest"` for *every* comment, `include_replies` adds replies |
+| `get_transcript` | Transcript text (+ timed snippets on request) |
+| `list_transcripts` | Available caption tracks |
+
+All tools are read-only. Hard limits (not flags): `max_results` is a page
+size capped at **50** (a larger value is clamped, not fetched), and every
+payload is capped at **16 000** characters (`truncated` plus a `hint`).
+Continue with `next_cursor` — do not raise the limit to "get the rest".
+`get_video` / `get_channel` default to `detail="concise"`. The server speaks
+stdio by default; use `ytscrape-mcp --transport streamable-http` for hosted
+setups. Do not expose HTTP mode to the internet without authentication. See
+the [MCP guide](https://vsmutok.github.io/ytscrape/guides/mcp/) for the limit
+table, proxy setup and client configs.
+
 ## What can you scrape from YouTube?
 
 | Data | Method | CLI |
@@ -104,10 +159,11 @@ Export everything to **JSON or CSV** in one line.
 ```bash
 pip install ytscrape            # or: uv add ytscrape
 pip install "ytscrape[async]"   # optional async API (httpx)
+pip install "ytscrape[mcp]"     # optional MCP server (ytscrape-mcp)
 ```
 
 Requires **Python 3.10+**. Runtime deps: `requests`, `pycountry`, `defusedxml`
-(+ `httpx` with the async extra).
+(+ `httpx` with the async extra, `mcp` with the MCP extra).
 
 ## Quick start
 
@@ -165,6 +221,7 @@ asyncio.run(main())
 | Localisation (`hl` / `gl`) | ✅ | Validated ISO codes                                    |
 | Typed models + `py.typed` | ✅ | PEP 561                                                |
 | CLI | ✅ | `ytscrape` / `python -m ytscrape`                      |
+| MCP server | ✅ | `ytscrape-mcp` (`ytscrape[mcp]`)                       |
 | Async API | ✅ | `AsyncYouTube` via `ytscrape[async]`                   |
 | Channel videos tab (`yt.channel_videos()`) | ✅ | Lazy pagination                                        |
 | Retries, backoff, rate limiting, bot detection | ✅ | `RetryPolicy`, `RateLimiter`, `min_interval`           |
