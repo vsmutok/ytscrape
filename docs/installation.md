@@ -10,7 +10,7 @@ ytscrape is a pure-Python library published on [PyPI](https://pypi.org/project/y
 
 ## Requirements
 
-* **Python 3.10 or newer.** ytscrape uses modern type annotations and structural pattern features that require Python 3.10+. It is tested against CPython 3.10, 3.11, 3.12, 3.13, and 3.14.
+* **Python 3.10 or newer.** ytscrape uses modern type annotations and structural pattern features that require Python 3.10+. It is tested against CPython 3.10, 3.11, 3.12, 3.13, 3.14 and 3.15.
 * **Runtime dependencies** — installed automatically by pip or uv:
 
 | Package                                                        | Purpose                                                                                              |
